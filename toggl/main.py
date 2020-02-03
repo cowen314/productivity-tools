@@ -30,6 +30,17 @@ class Toggl:
         return response
 
 
+class _EntryParser:
+    pass
+    # TODO: build interface by adding methods
+
+
+class ExampleParser(_EntryParser):
+    pass
+    # TODO implement this
+    # TODO add some special parsing rules
+
+
 def main():
     """
     General strategy:
