@@ -37,7 +37,7 @@ def main():
         - a summary report that's grouped by project and subgrouped by time_entries should work (see https://github.com/toggl/toggl_api_docs/blob/master/reports/summary.md)
     - use gui automation tool to import time to timer
     """
-    pass
+    print("There's nothing here yet")
 
 
 if __name__=="__main__":
