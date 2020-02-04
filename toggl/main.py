@@ -1,4 +1,5 @@
 import typing, requests
+from abc import abstractmethod
 
 
 class Toggl:
@@ -31,8 +32,9 @@ class Toggl:
 
 
 class _EntryParser:
-    pass
-    # TODO: build interface by adding methods
+    @abstractmethod
+    def parse_summary_entry_data(self, response: requests.Response):
+        raise NotImplementedError
 
 
 class ExampleParser(_EntryParser):
