@@ -1,7 +1,6 @@
-import requests
+import requests, json, pyautogui
 from typing import List, Dict
 from abc import abstractmethod
-import json
 
 
 class Toggl:
@@ -92,6 +91,35 @@ class ExampleParser(_EntryParser):
         return time_entries
 
 
+def import_entries(entries: List[TimeEntry]):
+    pyautogui.alert("Open and maximize timer. \
+        Press OK when ready to auto import time. \
+        Slam mouse into one of the corners of the screen\
+            at any point to cancel the sequence.")
+    for entry in entries:
+        pyautogui.hotkey('ctrl', 'n')
+        pyautogui.alert("Click into `Project` field of newly created entry then press OK.")
+        pyautogui.press(entry.client_and_project)
+        pyautogui.hotkey('tab')
+        pyautogui.press(entry.service_item)
+        pyautogui.hotkey('tab')
+        if entry.task:
+            pyautogui.press(entry.task)
+        pyautogui.hotkey('tab')
+        if entry.time_ms:
+            time_hrs = entry.time_ms / 1000.0 / 60 / 60
+            time_hrs_rounded = ((float)((int) (time_hrs + 0.125) * 4)) / 4
+            pyautogui.press(time_hrs_rounded)
+        pyautogui.hotkey('tab')
+        pyautogui.hotkey('tab')
+        pyautogui.hotkey('tab')
+        pyautogui.hotkey('tab')
+        pyautogui.hotkey('tab')
+        pyautogui.press(entry.description)
+        pyautogui.hotkey('tab')
+        pyautogui.hotkey('tab')
+
+
 def main():
     """
     General strategy:
@@ -109,6 +137,10 @@ def main():
 
     wednesday_data = my_toggl.get_entries_1_day("2020-02-05")
     print(wednesday_data)
+
+    e = ExampleParser()
+    parsed_data = e.parse_summary_entry_data(wednesday_data)
+    print(parsed_data)
 
 
 if __name__=="__main__":
