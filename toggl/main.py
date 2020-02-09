@@ -38,7 +38,8 @@ class _EntryParser:
 
 
 class ExampleParser(_EntryParser):
-    pass
+    def parse_summary_entry_data(self, response: requests.Response):
+        pass
     # TODO implement this
     # TODO add some special parsing rules
 
@@ -50,7 +51,7 @@ def main():
         - a summary report that's grouped by project and subgrouped by time_entries should work (see https://github.com/toggl/toggl_api_docs/blob/master/reports/summary.md)
     - use gui automation tool to import time to timer
     """
-    print("There's nothing here yet")
+    Toggl()
 
 
 if __name__=="__main__":
