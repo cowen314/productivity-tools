@@ -1,4 +1,4 @@
-import requests, json, pyautogui
+import requests, json, pyautogui, time
 from typing import List, Dict
 from abc import abstractmethod
 
@@ -91,33 +91,43 @@ class ExampleParser(_EntryParser):
         return time_entries
 
 
-def import_entries(entries: List[TimeEntry]):
-    pyautogui.alert("Open and maximize timer. \
-        Press OK when ready to auto import time. \
-        Slam mouse into one of the corners of the screen\
-            at any point to cancel the sequence.")
-    for entry in entries:
-        pyautogui.hotkey('ctrl', 'n')
-        pyautogui.alert("Click into `Project` field of newly created entry then press OK.")
-        pyautogui.press(entry.client_and_project)
-        pyautogui.hotkey('tab')
-        pyautogui.press(entry.service_item)
-        pyautogui.hotkey('tab')
-        if entry.task:
-            pyautogui.press(entry.task)
-        pyautogui.hotkey('tab')
-        if entry.time_ms:
-            time_hrs = entry.time_ms / 1000.0 / 60 / 60
-            time_hrs_rounded = ((float)((int) (time_hrs + 0.125) * 4)) / 4
-            pyautogui.press(time_hrs_rounded)
-        pyautogui.hotkey('tab')
-        pyautogui.hotkey('tab')
-        pyautogui.hotkey('tab')
-        pyautogui.hotkey('tab')
-        pyautogui.hotkey('tab')
-        pyautogui.press(entry.description)
-        pyautogui.hotkey('tab')
-        pyautogui.hotkey('tab')
+class _EntryImporter:
+    @abstractmethod
+    def import_entries(self, entries: List[TimeEntry]):
+        raise NotImplementedError
+
+
+class ExampleEntryImporter(_EntryImporter):
+    def import_entries(self, entries: List[TimeEntry]):
+        pyautogui.alert("Open timer. \
+            Press OK when ready to auto import time. \
+            Slam mouse into one of the corners of the screen\
+                at any point to cancel the sequence.")
+        time.sleep(3)
+        for entry in entries:
+            # pyautogui.hotkey('ctrl', 'n')
+            pyautogui.alert("Click into `Project` field of newly created entry then press OK.")
+            time.sleep(0.5)
+            pyautogui.typewrite(entry.client_and_project)
+            pyautogui.hotkey('tab')
+            pyautogui.typewrite(entry.service_item)
+            pyautogui.hotkey('tab')
+            if entry.task:
+                pyautogui.typewrite(entry.task)
+            pyautogui.hotkey('tab')
+            if entry.time_ms:
+                time_hrs = entry.time_ms / 1000.0 / 60 / 60
+                time_hrs_rounded = ((float)((int) (time_hrs + 0.125) * 4)) / 4
+                pyautogui.typewrite(str(time_hrs_rounded))
+            pyautogui.hotkey('tab')
+            pyautogui.hotkey('tab')
+            pyautogui.hotkey('tab')
+            pyautogui.hotkey('tab')
+            pyautogui.hotkey('tab')
+            pyautogui.typewrite(entry.description)
+            pyautogui.hotkey('tab')
+            pyautogui.hotkey('enter')
+            # pyautogui.hotkey('tab')
 
 
 def main():
@@ -128,19 +138,24 @@ def main():
     - use gui automation tool to import time to timer
     """
 
-    # for example: 
+    """ for example: """ 
+    # grab raw data from the Toggl
     api_key = ""  # SET THIS TO YOUR API KEY (e.g. "4b5c6d7e8b8c8e9e8e7b7a6a1a3c5b4a"). Log in then head to https://toggl.com/app/profile.
     my_toggl = Toggl(api_key)
     workspaces = my_toggl.get_available_workspaces()
     print(workspaces)
     my_toggl.workspace_id = workspaces[0]["id"]
-
     wednesday_data = my_toggl.get_entries_1_day("2020-02-05")
     print(wednesday_data)
 
+    # parse it to nicely formatted structure
     e = ExampleParser()
     parsed_data = e.parse_summary_entry_data(wednesday_data)
     print(parsed_data)
+
+    # import it
+    importer = ExampleEntryImporter()
+    importer.import_entries(parsed_data)
 
 
 if __name__=="__main__":
