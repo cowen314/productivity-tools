@@ -99,14 +99,12 @@ class _EntryImporter:
 
 class ExampleEntryImporter(_EntryImporter):
     def import_entries(self, entries: List[TimeEntry]):
-        pyautogui.alert("Open timer. \
-            Press OK when ready to auto import time. \
-            Slam mouse into one of the corners of the screen\
-                at any point to cancel the sequence.")
+        pyautogui.alert("Open timer and set the correct date. Press OK when ready to auto import time. Slam mouse into one of the corners of the screen at any point to cancel the sequence.")
         time.sleep(3)
         for entry in entries:
-            # pyautogui.hotkey('ctrl', 'n')
-            pyautogui.alert("Click into `Project` field of newly created entry then press OK.")
+            pyautogui.hotkey('ctrl', 'n')
+            # pyautogui.alert("Click into `Project` field of newly created entry then press OK.")
+            pyautogui.hotkey('f2')
             time.sleep(0.5)
             pyautogui.typewrite(entry.client_and_project)
             pyautogui.hotkey('tab')
@@ -130,15 +128,16 @@ class ExampleEntryImporter(_EntryImporter):
             # pyautogui.hotkey('tab')
 
 
-def main():
+def pull_and_import_single_day(date, api_key):
     """
+    @param date: a string in the format 'YYYY-MM-DD'
+    @param api_key: a Toggl API key
+
     General strategy:
     - use toggl API to pull report data
         - a summary report that's grouped by project and subgrouped by time_entries should work (see https://github.com/toggl/toggl_api_docs/blob/master/reports/summary.md)
-    - use gui automation tool to import time to timer
+    - use some automation tool to import time to timer
     """
-
-    """ for example: """ 
     # grab raw data from the Toggl
     api_key = ""  # SET THIS TO YOUR API KEY (e.g. "4b5c6d7e8b8c8e9e8e7b7a6a1a3c5b4a"). Log in then head to https://toggl.com/app/profile.
     my_toggl = Toggl(api_key)
@@ -156,6 +155,12 @@ def main():
     # import it
     importer = ExampleEntryImporter()
     importer.import_entries(parsed_data)
+
+
+def main():
+    # an example: 
+    api_key = ""  # SET THIS TO YOUR API KEY (e.g. "4b5c6d7e8b8c8e9e8e7b7a6a1a3c5b4a"). Log in then head to https://toggl.com/app/profile.
+    pull_and_import_single_day("2020-02-05", api_key)
 
 
 if __name__=="__main__":
