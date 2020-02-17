@@ -123,7 +123,7 @@ class ExampleEntryImporter(_EntryImporter):
             pyautogui.hotkey('tab')
             pyautogui.hotkey('tab')
             pyautogui.typewrite(entry.description)
-            pyautogui.hotkey('tab')
+            # pyautogui.hotkey('tab')
             pyautogui.hotkey('enter')
             # pyautogui.hotkey('tab')
 
@@ -139,10 +139,10 @@ def pull_and_import_single_day(date, api_key):
     - use some automation tool to import time to timer
     """
     # grab raw data from the Toggl
-    api_key = ""  # SET THIS TO YOUR API KEY (e.g. "4b5c6d7e8b8c8e9e8e7b7a6a1a3c5b4a"). Log in then head to https://toggl.com/app/profile.
     my_toggl = Toggl(api_key)
     workspaces = my_toggl.get_available_workspaces()
     print(workspaces)
+    time.sleep(1)  # max 1 request per second to toggl's API
     my_toggl.workspace_id = workspaces[0]["id"]
     wednesday_data = my_toggl.get_entries_1_day("2020-02-05")
     print(wednesday_data)
