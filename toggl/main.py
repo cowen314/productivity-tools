@@ -7,6 +7,7 @@ class Toggl:
     _BASE_SUMMARY_URL = "https://toggl.com/reports/api/v2/summary"
     _WORKSPACES_URL = "https://www.toggl.com/api/v8/workspaces"
     _PASSWORD = "api_token"
+
     def __init__(self, api_key: str, workspace_id: int = None, user_agent: str = "api_test"):
         self.api_key = api_key
         self.workspace_id = workspace_id
@@ -106,7 +107,8 @@ class ExampleEntryImporter(_EntryImporter):
             # pyautogui.alert("Click into `Project` field of newly created entry then press OK.")
             pyautogui.hotkey('f2')
             time.sleep(0.5)
-            pyautogui.typewrite(entry.client_and_project)
+            pyautogui.typewrite(entry.client_and_project, pause=0.01)
+            time.sleep(0.5)
             pyautogui.hotkey('tab')
             pyautogui.typewrite(entry.service_item)
             pyautogui.hotkey('tab')
@@ -144,12 +146,12 @@ def pull_and_import_single_day(date, api_key):
     print(workspaces)
     time.sleep(1)  # max 1 request per second to toggl's API
     my_toggl.workspace_id = workspaces[0]["id"]
-    wednesday_data = my_toggl.get_entries_1_day("2020-02-05")
-    print(wednesday_data)
+    data = my_toggl.get_entries_1_day(date)
+    print(data)
 
     # parse it to nicely formatted structure
     e = ExampleParser()
-    parsed_data = e.parse_summary_entry_data(wednesday_data)
+    parsed_data = e.parse_summary_entry_data(data)
     print(parsed_data)
 
     # import it
@@ -159,9 +161,9 @@ def pull_and_import_single_day(date, api_key):
 
 def main():
     # an example: 
-    api_key = ""  # SET THIS TO YOUR API KEY (e.g. "4b5c6d7e8b8c8e9e8e7b7a6a1a3c5b4a"). Log in then head to https://toggl.com/app/profile.
+    api_key = ""  # SET THIS TO YOUR API KEY (e.g. "4b5c6d7e8b8c8e9e8e7b7a6a1a3c5b4a"). Find it at https://toggl.com/app/profile.
     pull_and_import_single_day("2020-02-05", api_key)
 
 
-if __name__=="__main__":
+if __name__ == "__main__":
     main()

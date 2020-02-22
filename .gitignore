@@ -132,4 +132,5 @@ dmypy.json
 .vscode/
 
 # Other
-/toggl/private_launcher.py
+/private_launcher.py
+/.idea/
