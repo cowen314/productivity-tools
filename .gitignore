@@ -134,3 +134,5 @@ dmypy.json
 # Other
 /private_launcher.py
 /.idea/
+/private_data.py
+
