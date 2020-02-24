@@ -1,5 +1,5 @@
 import requests, json, pyautogui, time
-from typing import List, Dict
+from typing import List, Dict, Iterable
 from abc import abstractmethod
 
 
@@ -39,11 +39,20 @@ class TimeEntry:
         """
         @param client_and_project: the client and project in the form <client>:<project>
         """
-        self.client_and_project = client_and_project
-        self.service_item = service_item
-        self.task = task
-        self.time_ms = time_ms
-        self.description = description
+        self.client_and_project: str = client_and_project
+        self.service_item: str = service_item
+        self.task: str = task
+        self.time_ms: int = time_ms
+        self.description: str = description
+
+    def __str__(self):
+        return "c&p: %s; service_item: %s; task: %s; time_ms: %s; desc: %s" % (
+            self.client_and_project,
+            self.service_item,
+            self.task,
+            self.time_ms,
+            self.description
+        )
 
 
 class _EntryParser:
@@ -56,10 +65,11 @@ class _EntryParser:
 
 
 class ExampleParser(_EntryParser):
-    def __init__(self, toggl_project_to_client_name_map: Dict[str, str] = {}):
+    def __init__(self, toggl_project_to_client_name_map: Dict[str, str]={}, toggl_project_name_map: Dict[str, str]={}):
         self._toggl_project_to_client_name_map = toggl_project_to_client_name_map
+        self._toggl_project_name_map = toggl_project_name_map
 
-    def parse_summary_entry_data(self, daily_data: Dict):
+    def parse_summary_entry_data(self, daily_data: Dict) -> Iterable[TimeEntry]:
         time_entries = []
         for project in daily_data['data']:
             # get client name 
@@ -74,13 +84,21 @@ class ExampleParser(_EntryParser):
                 entry = TimeEntry()
 
                 toggl_entry_info = toggl_info['title']['time_entry'].split('|')
-                if len(toggl_entry_info) == 3:
+                if len(toggl_entry_info) == 3 or len(toggl_entry_info) == 4:
                     if client_name:
-                        entry.client_and_project = "%s:%s" % (client_name, toggl_entry_info[0])
+                        project_name = toggl_entry_info[0]
+                        if project_name in self._toggl_project_name_map:
+                            project_name = self._toggl_project_name_map[project_name]
+                        entry.client_and_project = "%s:%s" % (client_name, project_name)
                     else:
                         entry.client_and_project = toggl_entry_info[0]
-                    entry.service_item = toggl_entry_info[1]
-                    entry.description = toggl_entry_info[2]
+                    if len(toggl_entry_info) == 3:
+                        entry.service_item = toggl_entry_info[1]
+                        entry.description = toggl_entry_info[2]
+                    if len(toggl_entry_info) == 4:
+                        entry.service_item = toggl_entry_info[1]
+                        entry.task = toggl_entry_info[2]
+                        entry.description = toggl_entry_info[3]
                 elif len(toggl_entry_info) == 2:
                     entry.client_and_project = ""
                     entry.service_item = toggl_entry_info[0]
@@ -99,7 +117,7 @@ class _EntryImporter:
 
 
 class ExampleEntryImporter(_EntryImporter):
-    def import_entries(self, entries: List[TimeEntry]):
+    def import_entries(self, entries: Iterable[TimeEntry]):
         pyautogui.alert("Open timer and set the correct date. Press OK when ready to auto import time. Slam mouse into one of the corners of the screen at any point to cancel the sequence.")
         time.sleep(3)
         for entry in entries:
@@ -107,17 +125,18 @@ class ExampleEntryImporter(_EntryImporter):
             # pyautogui.alert("Click into `Project` field of newly created entry then press OK.")
             pyautogui.hotkey('f2')
             time.sleep(0.5)
-            pyautogui.typewrite(entry.client_and_project, pause=0.01)
+            pyautogui.typewrite(entry.client_and_project, pause=0.2)
             time.sleep(0.5)
             pyautogui.hotkey('tab')
             pyautogui.typewrite(entry.service_item)
             pyautogui.hotkey('tab')
             if entry.task:
                 pyautogui.typewrite(entry.task)
+                time.sleep(0.25)
             pyautogui.hotkey('tab')
             if entry.time_ms:
                 time_hrs = entry.time_ms / 1000.0 / 60 / 60
-                time_hrs_rounded = ((float)((int) (time_hrs + 0.125) * 4)) / 4
+                time_hrs_rounded = (float(int((time_hrs + 0.125) * 4))) / 4
                 pyautogui.typewrite(str(time_hrs_rounded))
             pyautogui.hotkey('tab')
             pyautogui.hotkey('tab')
@@ -130,7 +149,7 @@ class ExampleEntryImporter(_EntryImporter):
             # pyautogui.hotkey('tab')
 
 
-def pull_and_import_single_day(date, api_key):
+def pull_and_import_single_day(date, api_key, toggl_project_to_client_name_map: Dict[str,str]={}, toggl_project_name_map: Dict[str,str]={}):
     """
     @param date: a string in the format 'YYYY-MM-DD'
     @param api_key: a Toggl API key
@@ -150,9 +169,10 @@ def pull_and_import_single_day(date, api_key):
     print(data)
 
     # parse it to nicely formatted structure
-    e = ExampleParser()
+    e = ExampleParser(toggl_project_to_client_name_map, toggl_project_name_map)
     parsed_data = e.parse_summary_entry_data(data)
-    print(parsed_data)
+    for day in parsed_data:
+        print(day)
 
     # import it
     importer = ExampleEntryImporter()
