@@ -9,12 +9,12 @@ function update_component(componentId)
         if (this.readyState == 4)
         {
             if (this.status == 200)
-                document.getElementById(daqStateElementId).innerHTML = this.responseText;
+                document.getElementById(componentId).innerHTML = this.responseText;
             else
-                document.getElementById(daqStateElementId).innerHTML = "Request error";
+                document.getElementById(componentId).innerHTML = "Request error";
         }
     }
-    request.open("GET", concat(base_api_url, component_update_method), true);
+    request.open("GET", base_api_url.concat('', component_update_method), true);
     request.setRequestHeader("componentId", componentId);
     request.send();
 }
