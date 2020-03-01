@@ -21,6 +21,7 @@ from typing import List, Tuple, Iterable
 from requests import get
 from toggl.main import pull_and_import_single_day, Toggl, ExampleParser, ExampleEntryImporter
 from toggl.private_data import api_key
+from random import random
 
 '''
 my_toggl = Toggl(api_key)
@@ -46,8 +47,13 @@ importer.import_entries(parsed_data)
 
 '''Set up the application'''
 # TODO figure out how flask apps are usually started and set up, then move this code there
-app = Flask(__name__, template_folder='./templates')
+app = Flask(__name__, template_folder='./')
 toggl = Toggl(api_key)
+
+
+@app.route("/")
+def home():
+    return render_template("ui.html")
 
 
 @app.route("/workspaces")
@@ -61,7 +67,12 @@ def get_workspaces():
 def update_component():
     component_id = request.headers.get('componentId')  # it'd be nice if we could define in one place (that'd apply to front and backend stuff)
     if not component_id:
-        return "The component '%s' could not be found." % , 400
+        return "A component header could not be found.", 400
+
+    if component_id == "workspaces":
+        return render_template("./templates/components/workspaces.html", test_str=str(random()))
+    else:
+        return "The component '%s' could not be found." % component_id, 400
 
 
 """
