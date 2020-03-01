@@ -119,21 +119,25 @@ class _EntryImporter:
 class ExampleEntryImporter(_EntryImporter):
     def import_entries(self, entries: Iterable[TimeEntry]):
         pyautogui.alert("Open timer and set the correct date. Press OK when ready to auto import time. Slam mouse into one of the corners of the screen at any point to cancel the sequence.")
-        time.sleep(3)
+        time.sleep(2)
         for entry in entries:
             pyautogui.hotkey('ctrl', 'n')
             # pyautogui.alert("Click into `Project` field of newly created entry then press OK.")
+            time.sleep(1)
             pyautogui.hotkey('f2')
             time.sleep(0.5)
-            pyautogui.typewrite(entry.client_and_project, pause=0.2)
-            time.sleep(0.5)
+            if entry.client_and_project:
+                pyautogui.typewrite(entry.client_and_project, pause=0.2)
+                time.sleep(0.5)
             pyautogui.hotkey('tab')
-            pyautogui.typewrite(entry.service_item)
+            if entry.service_item:
+                pyautogui.typewrite(entry.service_item)
             pyautogui.hotkey('tab')
             if entry.task:
                 pyautogui.typewrite(entry.task)
                 time.sleep(0.25)
             pyautogui.hotkey('tab')
+            # convert to hours, round to the nearest 15 minute increment
             if entry.time_ms:
                 time_hrs = entry.time_ms / 1000.0 / 60 / 60
                 time_hrs_rounded = (float(int((time_hrs + 0.125) * 4))) / 4
@@ -143,7 +147,8 @@ class ExampleEntryImporter(_EntryImporter):
             pyautogui.hotkey('tab')
             pyautogui.hotkey('tab')
             pyautogui.hotkey('tab')
-            pyautogui.typewrite(entry.description)
+            if entry.description:
+                pyautogui.typewrite(entry.description)
             # pyautogui.hotkey('tab')
             pyautogui.hotkey('enter')
             # pyautogui.hotkey('tab')
