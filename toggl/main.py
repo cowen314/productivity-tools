@@ -65,9 +65,13 @@ class _EntryParser:
 
 
 class ExampleParser(_EntryParser):
-    def __init__(self, toggl_project_to_client_name_map: Dict[str, str]={}, toggl_project_name_map: Dict[str, str]={}):
+    def __init__(self,
+                 toggl_project_to_client_name_map: Dict[str, str]={},
+                 toggl_project_name_map: Dict[str, str]={},
+                 projects_to_skip: List[str]=None):
         self._toggl_project_to_client_name_map = toggl_project_to_client_name_map
         self._toggl_project_name_map = toggl_project_name_map
+        self._projects_to_skip = projects_to_skip
 
     def parse_summary_entry_data(self, daily_data: Dict) -> Iterable[TimeEntry]:
         time_entries = []
@@ -89,7 +93,12 @@ class ExampleParser(_EntryParser):
                         project_name = toggl_entry_info[0]
                         if project_name in self._toggl_project_name_map:
                             project_name = self._toggl_project_name_map[project_name]
-                        entry.client_and_project = "%s:%s" % (client_name, project_name)
+                        if project_name in self._projects_to_skip:
+                            continue
+                        if client_name != "":
+                            entry.client_and_project = "%s:%s" % (client_name, project_name)
+                        else:
+                            entry.client_and_project = "%s" % project_name
                     else:
                         entry.client_and_project = toggl_entry_info[0]
                     if len(toggl_entry_info) == 3:
@@ -132,6 +141,7 @@ class ExampleEntryImporter(_EntryImporter):
             pyautogui.hotkey('tab')
             if entry.service_item:
                 pyautogui.typewrite(entry.service_item)
+                time.sleep(0.1)
             pyautogui.hotkey('tab')
             if entry.task:
                 pyautogui.typewrite(entry.task)
@@ -141,7 +151,9 @@ class ExampleEntryImporter(_EntryImporter):
             if entry.time_ms:
                 time_hrs = entry.time_ms / 1000.0 / 60 / 60
                 time_hrs_rounded = (float(int((time_hrs + 0.125) * 4))) / 4
-                pyautogui.typewrite(str(time_hrs_rounded))
+                if time_hrs_rounded > 0:
+                    pyautogui.typewrite(str(time_hrs_rounded))
+                time.sleep(0.1)
             pyautogui.hotkey('tab')
             pyautogui.hotkey('tab')
             pyautogui.hotkey('tab')
@@ -149,12 +161,16 @@ class ExampleEntryImporter(_EntryImporter):
             pyautogui.hotkey('tab')
             if entry.description:
                 pyautogui.typewrite(entry.description)
-            # pyautogui.hotkey('tab')
             pyautogui.hotkey('enter')
-            # pyautogui.hotkey('tab')
+            time.sleep(1)
+        pyautogui.alert("Time entry complete")
 
 
-def pull_and_import_single_day(date, api_key, toggl_project_to_client_name_map: Dict[str,str]={}, toggl_project_name_map: Dict[str,str]={}):
+def pull_and_import_single_day(date,
+                               api_key,
+                               toggl_project_to_client_name_map: Dict[str,str]={},
+                               toggl_project_name_map: Dict[str,str]={},
+                               projects_to_skip: List[str]=None):
     """
     @param date: a string in the format 'YYYY-MM-DD'
     @param api_key: a Toggl API key
@@ -174,7 +190,7 @@ def pull_and_import_single_day(date, api_key, toggl_project_to_client_name_map: 
     print(data)
 
     # parse it to nicely formatted structure
-    e = ExampleParser(toggl_project_to_client_name_map, toggl_project_name_map)
+    e = ExampleParser(toggl_project_to_client_name_map, toggl_project_name_map, projects_to_skip)
     parsed_data = e.parse_summary_entry_data(data)
     for day in parsed_data:
         print(day)
