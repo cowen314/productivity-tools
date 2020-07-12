@@ -1,5 +1,5 @@
 import requests, json, pyautogui, time
-from typing import List, Dict, Iterable
+from typing import List, Dict, Iterable, Callable
 from abc import abstractmethod
 
 
@@ -67,11 +67,9 @@ class _EntryParser:
 class ExampleParser(_EntryParser):
     def __init__(self,
                  toggl_project_to_client_name_map: Dict[str, str]={},
-                 toggl_project_name_map: Dict[str, str]={},
-                 projects_to_skip: List[str]=None):
+                 toggl_project_name_map: Dict[str, str]={}):
         self._toggl_project_to_client_name_map = toggl_project_to_client_name_map
         self._toggl_project_name_map = toggl_project_name_map
-        self._projects_to_skip = projects_to_skip
 
     def parse_summary_entry_data(self, daily_data: Dict) -> Iterable[TimeEntry]:
         time_entries = []
@@ -93,8 +91,6 @@ class ExampleParser(_EntryParser):
                         project_name = toggl_entry_info[0]
                         if project_name in self._toggl_project_name_map:
                             project_name = self._toggl_project_name_map[project_name]
-                        if project_name in self._projects_to_skip:
-                            continue
                         if client_name != "":
                             entry.client_and_project = "%s:%s" % (client_name, project_name)
                         else:
@@ -121,17 +117,19 @@ class ExampleParser(_EntryParser):
 
 class _EntryImporter:
     @abstractmethod
-    def import_entries(self, entries: List[TimeEntry]):
+    def import_entries(self, entries: List[TimeEntry], skip_logic: Callable[[str, str], bool]):
         raise NotImplementedError
 
 
 class ExampleEntryImporter(_EntryImporter):
-    def import_entries(self, entries: Iterable[TimeEntry]):
+    def import_entries(self, entries: Iterable[TimeEntry], skip_logic: Callable[[str, str], bool]):
         pyautogui.alert("Open timer and set the correct date. Press OK when ready to auto import time. Slam mouse into one of the corners of the screen at any point to cancel the sequence.")
         time.sleep(2)
         for entry in entries:
+            if skip_logic(entry.client_and_project, entry.service_item):
+                print("Skipped: " + str(entry))
+                continue
             pyautogui.hotkey('ctrl', 'n')
-            # pyautogui.alert("Click into `Project` field of newly created entry then press OK.")
             time.sleep(1)
             pyautogui.hotkey('f2')
             time.sleep(0.5)
@@ -168,18 +166,23 @@ class ExampleEntryImporter(_EntryImporter):
 
 def pull_and_import_single_day(date,
                                api_key,
-                               toggl_project_to_client_name_map: Dict[str,str]={},
-                               toggl_project_name_map: Dict[str,str]={},
-                               projects_to_skip: List[str]=None):
+                               toggl_project_to_client_name_map: Dict[str, str] = {},
+                               toggl_project_name_map: Dict[str, str] = {},
+                               skip_logic: Callable[[str, str], bool] = lambda cp, ser_it: False):
     """
     @param date: a string in the format 'YYYY-MM-DD'
     @param api_key: a Toggl API key
+    @param toggl_project_to_client_name_map: map of toggl project names to official client names, in case they are different
+    @param toggl_project_name_map: map of toggl project name to official project name
+    @param skip_logic: a function that takes parameters (client_and_project: str, service_item: str) and returns
+        True if the any item meeting those conditions should be skipped and False otherwise
 
     General strategy:
     - use toggl API to pull report data
         - a summary report that's grouped by project and subgrouped by time_entries should work (see https://github.com/toggl/toggl_api_docs/blob/master/reports/summary.md)
     - use some automation tool to import time to timer
     """
+
     # grab raw data from the Toggl
     my_toggl = Toggl(api_key)
     workspaces = my_toggl.get_available_workspaces()
@@ -190,14 +193,14 @@ def pull_and_import_single_day(date,
     print(data)
 
     # parse it to nicely formatted structure
-    e = ExampleParser(toggl_project_to_client_name_map, toggl_project_name_map, projects_to_skip)
+    e = ExampleParser(toggl_project_to_client_name_map, toggl_project_name_map)
     parsed_data = e.parse_summary_entry_data(data)
     for day in parsed_data:
         print(day)
 
     # import it
     importer = ExampleEntryImporter()
-    importer.import_entries(parsed_data)
+    importer.import_entries(parsed_data, skip_logic)
 
 
 def main():
