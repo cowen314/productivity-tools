@@ -1,5 +1,5 @@
 import requests, json, pyautogui, time
-from typing import List, Dict, Iterable
+from typing import List, Dict, Iterable, Callable
 from abc import abstractmethod
 
 
@@ -65,7 +65,9 @@ class _EntryParser:
 
 
 class ExampleParser(_EntryParser):
-    def __init__(self, toggl_project_to_client_name_map: Dict[str, str]={}, toggl_project_name_map: Dict[str, str]={}):
+    def __init__(self,
+                 toggl_project_to_client_name_map: Dict[str, str]={},
+                 toggl_project_name_map: Dict[str, str]={}):
         self._toggl_project_to_client_name_map = toggl_project_to_client_name_map
         self._toggl_project_name_map = toggl_project_name_map
 
@@ -89,7 +91,10 @@ class ExampleParser(_EntryParser):
                         project_name = toggl_entry_info[0]
                         if project_name in self._toggl_project_name_map:
                             project_name = self._toggl_project_name_map[project_name]
-                        entry.client_and_project = "%s:%s" % (client_name, project_name)
+                        if client_name != "":
+                            entry.client_and_project = "%s:%s" % (client_name, project_name)
+                        else:
+                            entry.client_and_project = "%s" % project_name
                     else:
                         entry.client_and_project = toggl_entry_info[0]
                     if len(toggl_entry_info) == 3:
@@ -112,53 +117,72 @@ class ExampleParser(_EntryParser):
 
 class _EntryImporter:
     @abstractmethod
-    def import_entries(self, entries: List[TimeEntry]):
+    def import_entries(self, entries: List[TimeEntry], skip_logic: Callable[[str, str], bool]):
         raise NotImplementedError
 
 
 class ExampleEntryImporter(_EntryImporter):
-    def import_entries(self, entries: Iterable[TimeEntry]):
+    def import_entries(self, entries: Iterable[TimeEntry], skip_logic: Callable[[str, str], bool]):
         pyautogui.alert("Open timer and set the correct date. Press OK when ready to auto import time. Slam mouse into one of the corners of the screen at any point to cancel the sequence.")
-        time.sleep(3)
+        time.sleep(2)
         for entry in entries:
+            if skip_logic(entry.client_and_project, entry.service_item):
+                print("Skipped: " + str(entry))
+                continue
             pyautogui.hotkey('ctrl', 'n')
-            # pyautogui.alert("Click into `Project` field of newly created entry then press OK.")
+            time.sleep(1)
             pyautogui.hotkey('f2')
             time.sleep(0.5)
-            pyautogui.typewrite(entry.client_and_project, pause=0.2)
-            time.sleep(0.5)
+            if entry.client_and_project:
+                pyautogui.typewrite(entry.client_and_project, pause=0.2)
+                time.sleep(0.5)
             pyautogui.hotkey('tab')
-            pyautogui.typewrite(entry.service_item)
+            if entry.service_item:
+                pyautogui.typewrite(entry.service_item)
+                time.sleep(0.1)
             pyautogui.hotkey('tab')
             if entry.task:
                 pyautogui.typewrite(entry.task)
                 time.sleep(0.25)
             pyautogui.hotkey('tab')
+            # convert to hours, round to the nearest 15 minute increment
             if entry.time_ms:
                 time_hrs = entry.time_ms / 1000.0 / 60 / 60
                 time_hrs_rounded = (float(int((time_hrs + 0.125) * 4))) / 4
-                pyautogui.typewrite(str(time_hrs_rounded))
+                if time_hrs_rounded > 0:
+                    pyautogui.typewrite(str(time_hrs_rounded))
+                time.sleep(0.1)
             pyautogui.hotkey('tab')
             pyautogui.hotkey('tab')
             pyautogui.hotkey('tab')
             pyautogui.hotkey('tab')
             pyautogui.hotkey('tab')
-            pyautogui.typewrite(entry.description)
-            # pyautogui.hotkey('tab')
+            if entry.description:
+                pyautogui.typewrite(entry.description)
             pyautogui.hotkey('enter')
-            # pyautogui.hotkey('tab')
+            time.sleep(1)
+        pyautogui.alert("Time entry complete")
 
 
-def pull_and_import_single_day(date, api_key, toggl_project_to_client_name_map: Dict[str,str]={}, toggl_project_name_map: Dict[str,str]={}):
+def pull_and_import_single_day(date,
+                               api_key,
+                               toggl_project_to_client_name_map: Dict[str, str] = {},
+                               toggl_project_name_map: Dict[str, str] = {},
+                               skip_logic: Callable[[str, str], bool] = lambda cp, ser_it: False):
     """
     @param date: a string in the format 'YYYY-MM-DD'
     @param api_key: a Toggl API key
+    @param toggl_project_to_client_name_map: map of toggl project names to official client names, in case they are different
+    @param toggl_project_name_map: map of toggl project name to official project name
+    @param skip_logic: a function that takes parameters (client_and_project: str, service_item: str) and returns
+        True if the any item meeting those conditions should be skipped and False otherwise
 
     General strategy:
     - use toggl API to pull report data
         - a summary report that's grouped by project and subgrouped by time_entries should work (see https://github.com/toggl/toggl_api_docs/blob/master/reports/summary.md)
     - use some automation tool to import time to timer
     """
+
     # grab raw data from the Toggl
     my_toggl = Toggl(api_key)
     workspaces = my_toggl.get_available_workspaces()
@@ -176,7 +200,7 @@ def pull_and_import_single_day(date, api_key, toggl_project_to_client_name_map: 
 
     # import it
     importer = ExampleEntryImporter()
-    importer.import_entries(parsed_data)
+    importer.import_entries(parsed_data, skip_logic)
 
 
 def main():
