@@ -8,7 +8,7 @@ import urllib.parse
 CONFIG_FILENAME = "cloneconfig.json"
 DEFAULT_CONFIG = {
     "default_namespace": "DMC/labview/",
-    "default_template_url": "https://git.dmcinfo.com/DMC/labview/template-project",
+    "default_template_url": "https://git.dmcinfo.com/DMC/labview/template-project.git",
     "default_dest_base_url": "https://git.dmcinfo.com/"
 }
 
