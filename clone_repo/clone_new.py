@@ -4,11 +4,12 @@ import pathlib
 import json
 import shutil
 import urllib.parse
+import posixpath
 
 CONFIG_FILENAME = "cloneconfig.json"
 DEFAULT_CONFIG = {
     "default_namespace": "DMC/labview/",
-    "default_template_url": "https://git.dmcinfo.com/DMC/labview/template-project.git",
+    "default_template_url": "https://git.dmcinfo.com/DMC/labview/labview-template-project.git",
     "default_dest_base_url": "https://git.dmcinfo.com/"
 }
 
@@ -33,6 +34,7 @@ parser.add_argument('--dest-base-url', help="URL base for the new Gitlab repo / 
 # parse args
 args = parser.parse_args()
 target_path = pathlib.Path(args.target_path)
+cleaned_project_name = args.project_name.replace(" ", "-")
 
 # determine if the user is trying to create a repo from scratch, or just pull the template into an existing repo
 # TODO do this later 
@@ -58,27 +60,65 @@ po = subprocess.run(
     cwd=target_path.resolve())
 if po.returncode > 0:
     exit("ERROR: " + po.stderr.decode('ascii'))
+elif len(po.stdout) > 0:
+    print(po.stdout.decode('ascii'))
 
-# remove the git dir, move the files from the main dir into the current dir
-shutil.rmtree(target_path / ".git")
+# grab repo dir
+repo_dir = list(target_path.glob("*"))[0]  # there should only be one folder at the target path after the clone
 
-# do.... other stuff??
+# pull lfs content
+print("Pulling LFS content")
+po = subprocess.run(
+    ["git", "lfs", "pull"],
+    capture_output=True,
+    cwd=repo_dir.resolve())
+if po.returncode > 0:
+    # shutil.rmtree(repo_dir)
+    exit("ERROR: " + po.stderr.decode('ascii'))
+elif len(po.stdout) > 0:
+    print(po.stdout.decode('ascii'))
 
-# TODO clone the gitattributes template from the gitattributes template repo
+# remove the remote ref
+po = subprocess.run(
+    ["git", "remote", "remove", "origin"],
+    capture_output=True,
+    cwd=repo_dir.resolve())
+if po.returncode > 0:
+    # shutil.rmtree(repo_dir)
+    exit("ERROR: " + po.stderr.decode('ascii'))
+elif len(po.stdout) > 0:
+    print(po.stdout.decode('ascii'))
 
-# hit the command to add a new repo to the remote (https://docs.gitlab.com/ee/gitlab-basics/create-project.html#push-to-create-a-new-project)
-new_project_url = urllib.parse.urljoin(args.dest_base_url, args.namespace)
-new_project_url = urllib.parse.urljoin(new_project_url, args.project_name)
+# hit the command to add a new repo to the remote
+# (https://docs.gitlab.com/ee/gitlab-basics/create-project.html#push-to-create-a-new-project)
+namespace_url = urllib.parse.urljoin(args.dest_base_url, args.namespace)
+new_project_url = urllib.parse.urljoin(args.dest_base_url, posixpath.join(args.namespace, args.project_name+".git"))
 
-print("Pushing to new URL: %s" % new_project_url)
+print("Pushing to new project at %s" % new_project_url)
 po = subprocess.run(
     ["git", "push", "--set-upstream", new_project_url, "master"],
     capture_output=True,
-    cwd=target_path.resolve())
+    cwd=repo_dir.resolve())
 if po.returncode > 0:
+    # shutil.rmtree(repo_dir)
     exit("ERROR: " + po.stderr.decode('ascii'))
-# if ???:
-#     print("WARN: unable to create repo on the remote: %s" % err)
+elif len(po.stdout) > 0:
+    print(po.stdout.decode('ascii'))
 
-# add and commit code?
-# be sure to handle failures here
+# add ref to origin
+po = subprocess.run(
+    ["git", "remote", "add", "origin", new_project_url],
+    capture_output=True,
+    cwd=repo_dir.resolve())
+if po.returncode > 0:
+    # shutil.rmtree(repo_dir)
+    exit("ERROR: " + po.stderr.decode('ascii'))
+elif len(po.stdout) > 0:
+    print(po.stdout.decode('ascii'))
+
+new_project_url = urllib.parse.urljoin(args.dest_base_url, posixpath.join(args.namespace, args.project_name))
+project_settings_url = urllib.parse.urljoin(args.dest_base_url, posixpath.join(args.namespace, args.project_name, "edit"))
+print("SUCCESS: Repository created successfully!"
+      "\nURL of new project is %s."
+      "\nProject visibility is currently set to private, navigate to %s to update it."
+      "\nAll code sourced from %s" % (new_project_url, project_settings_url, args.template_url))
