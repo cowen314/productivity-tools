@@ -46,11 +46,11 @@ class TimeEntry:
         self.description: str = description
 
     def __str__(self):
-        return "c&p: %s; service_item: %s; task: %s; time_ms: %s; desc: %s" % (
+        return "c&p: %s; service_item: %s; task: %s; time_hr: %s; desc: %s" % (
             self.client_and_project,
             self.service_item,
             self.task,
-            self.time_ms,
+            self.time_ms / 60000 / 60,
             self.description
         )
 
