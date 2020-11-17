@@ -5,7 +5,9 @@ import json
 import shutil
 import urllib.parse
 import posixpath
+import datetime
 
+TEMP_DIR_NAME = ".repo-creator"
 CONFIG_FILENAME = "cloneconfig.json"
 DEFAULT_CONFIG = {
     "default_namespace": "DMC/labview/",
@@ -33,7 +35,7 @@ parser.add_argument('--dest-base-url', help="URL base for the new Gitlab repo / 
 
 # parse args
 args = parser.parse_args()
-target_path = pathlib.Path(args.target_path)
+target_path = pathlib.Path(args.target_path) / TEMP_DIR_NAME
 cleaned_project_name = args.project_name.replace(" ", "-")
 
 # determine if the user is trying to create a repo from scratch, or just pull the template into an existing repo
@@ -101,7 +103,7 @@ po = subprocess.run(
     cwd=repo_dir.resolve())
 if po.returncode > 0:
     # shutil.rmtree(repo_dir)
-    exit("ERROR: " + po.stderr.decode('ascii'))
+    exit("ERROR: Failed to create new repository (does it already exist?)\n" + po.stderr.decode('ascii'))
 elif len(po.stdout) > 0:
     print(po.stdout.decode('ascii'))
 
@@ -115,6 +117,37 @@ if po.returncode > 0:
     exit("ERROR: " + po.stderr.decode('ascii'))
 elif len(po.stdout) > 0:
     print(po.stdout.decode('ascii'))
+
+# add "initial" commit
+print("Adding initial commit")
+init_file = repo_dir / "README.md"
+init_file.touch()
+with open(init_file, "a") as fh:
+    fh.write("\nThis project was created %s by copying %s." % (str(datetime.datetime.now()), args.template_url))
+po = subprocess.run(
+    ["git", "commit", "-am", "'REPO CREATOR: INIT'"],
+    capture_output=True,
+    cwd=repo_dir.resolve())
+if po.returncode > 0:
+    # shutil.rmtree(repo_dir)
+    exit("ERROR: " + po.stderr.decode('ascii'))
+elif len(po.stdout) > 0:
+    print(po.stdout.decode('ascii'))
+
+print("Pushing")
+po = subprocess.run(
+    ["git", "push"],
+    capture_output=True,
+    cwd=repo_dir.resolve())
+if po.returncode > 0:
+    # shutil.rmtree(repo_dir)
+    exit("ERROR: " + po.stderr.decode('ascii'))
+elif len(po.stdout) > 0:
+    print(po.stdout.decode('ascii'))
+
+print("Moving out of temporary directory")
+repo_dir.rename(repo_dir.parent.parent / cleaned_project_name)  # move up a directory, into appropriately named folder
+(repo_dir.parent.parent / TEMP_DIR_NAME).rmdir()
 
 new_project_url = urllib.parse.urljoin(args.dest_base_url, posixpath.join(args.namespace, args.project_name))
 project_settings_url = urllib.parse.urljoin(args.dest_base_url, posixpath.join(args.namespace, args.project_name, "edit"))
