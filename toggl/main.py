@@ -117,33 +117,33 @@ class ExampleParser(_EntryParser):
 
 class _EntryImporter:
     @abstractmethod
-    def import_entries(self, entries: List[TimeEntry], skip_logic: Callable[[str, str], bool]):
+    def import_entries(self, entries: List[TimeEntry], skip_logic: Callable[[str, str], bool], slowdown_factor: float = 1):
         raise NotImplementedError
 
 
 class ExampleEntryImporter(_EntryImporter):
-    def import_entries(self, entries: Iterable[TimeEntry], skip_logic: Callable[[str, str], bool]):
+    def import_entries(self, entries: Iterable[TimeEntry], skip_logic: Callable[[str, str], bool], slowdown_factor: float = 1):
         pyautogui.alert("Open timer and set the correct date. Press OK when ready to auto import time. Slam mouse into one of the corners of the screen at any point to cancel the sequence.")
-        time.sleep(2)
+        time.sleep(slowdown_factor*2)
         for entry in entries:
             if skip_logic(entry.client_and_project, entry.service_item):
                 print("Skipped: " + str(entry))
                 continue
             pyautogui.hotkey('ctrl', 'n')
-            time.sleep(1)
+            time.sleep(slowdown_factor*1)
             pyautogui.hotkey('f2')
-            time.sleep(0.5)
+            time.sleep(slowdown_factor*0.5)
             if entry.client_and_project:
                 pyautogui.typewrite(entry.client_and_project, pause=0.2)
-                time.sleep(0.5)
+                time.sleep(slowdown_factor*0.5)
             pyautogui.hotkey('tab')
             if entry.service_item:
                 pyautogui.typewrite(entry.service_item)
-                time.sleep(0.1)
+                time.sleep(slowdown_factor*0.1)
             pyautogui.hotkey('tab')
             if entry.task:
                 pyautogui.typewrite(entry.task)
-                time.sleep(0.25)
+                time.sleep(slowdown_factor*0.25)
             pyautogui.hotkey('tab')
             # convert to hours, round to the nearest 15 minute increment
             if entry.time_ms:
@@ -151,7 +151,7 @@ class ExampleEntryImporter(_EntryImporter):
                 time_hrs_rounded = (float(int((time_hrs + 0.125) * 4))) / 4
                 if time_hrs_rounded > 0:
                     pyautogui.typewrite(str(time_hrs_rounded))
-                time.sleep(0.1)
+                time.sleep(slowdown_factor*0.1)
             pyautogui.hotkey('tab')
             pyautogui.hotkey('tab')
             pyautogui.hotkey('tab')
@@ -160,7 +160,7 @@ class ExampleEntryImporter(_EntryImporter):
             if entry.description:
                 pyautogui.typewrite(entry.description)
             pyautogui.hotkey('enter')
-            time.sleep(1)
+            time.sleep(slowdown_factor*1)
         pyautogui.alert("Time entry complete")
 
 
@@ -168,7 +168,8 @@ def pull_and_import_single_day(date,
                                api_key,
                                toggl_project_to_client_name_map: Dict[str, str] = {},
                                toggl_project_name_map: Dict[str, str] = {},
-                               skip_logic: Callable[[str, str], bool] = lambda cp, ser_it: False):
+                               skip_logic: Callable[[str, str], bool] = lambda cp, ser_it: False,
+                               slowdown_factor: float = 1):
     """
     @param date: a string in the format 'YYYY-MM-DD'
     @param api_key: a Toggl API key
@@ -176,6 +177,7 @@ def pull_and_import_single_day(date,
     @param toggl_project_name_map: map of toggl project name to official project name
     @param skip_logic: a function that takes parameters (client_and_project: str, service_item: str) and returns
         True if the any item meeting those conditions should be skipped and False otherwise
+    @param slowdown_factor: a multiplier applied to import waits. Increase the value of this parameter to run the import process more slowly.
 
     General strategy:
     - use toggl API to pull report data
@@ -200,7 +202,7 @@ def pull_and_import_single_day(date,
 
     # import it
     importer = ExampleEntryImporter()
-    importer.import_entries(parsed_data, skip_logic)
+    importer.import_entries(parsed_data, skip_logic, slowdown_factor=slowdown_factor)
 
 
 def main():
