@@ -15,6 +15,8 @@ DEFAULT_CONFIG = {
     "default_dest_base_url": "https://git.dmcinfo.com/"
 }
 
+# TODO allow this to run in an interactive mode... like from a console window or something
+
 # read in config file, create a new one if none exists
 try:
     with open(pathlib.Path(CONFIG_FILENAME)) as fh:
