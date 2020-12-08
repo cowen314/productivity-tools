@@ -11,6 +11,11 @@ TARGET_DIR = Path(os.environ['PROGRAMFILES']) / "DeveloperName" / "AppName"  # T
 USR_VAR_NAME = "MyAppUsrVar"  # TODO set this to a unique user variable name (distinct to the application)
 
 
+def add_shortcut_to_desktop():
+    # TODO
+    pass
+
+
 def copy_dist_to_target(source_path: Path, target_path: Path) -> bool:
     if source_path.exists():
         print("Found source/distribution path at %s" % source_path.resolve())
