@@ -42,6 +42,7 @@ def add_dir_to_usr_path_var(path: Path, user_var_name: str) -> str:
             return "%s already exists in the PATH variable" % path.resolve()
 
     # TODO add logic to cleanly append to path
+    #
     """
     Adding a variable to the path is going to be more difficult than expected. We'll probably just need to do the following:
     - Check to see how long the path variable is.
@@ -50,6 +51,10 @@ def add_dir_to_usr_path_var(path: Path, user_var_name: str) -> str:
         - move existing paths from the path variable to the new expansion variable to make room for the new expansion variable in the path variable 
         - append the user variable to the path variable
         - add the new dir to the expansion variable
+    Can't figure out how to do this cleanly with cmd, and setx truncates hard, so a separate PS script might be best. 
+    Resources:
+    https://stackoverflow.com/questions/714877/setting-windows-powershell-environment-variables
+    https://stackoverflow.com/questions/21944895/running-powershell-script-within-python-script-how-to-make-python-print-the-pow
     """
     # subprocess.run(['setx', USR_VAR_NAME, str(TARGET_DIR.resolve()), '/m'])  # https://docs.microsoft.com/en-us/windows-server/administration/windows-commands/setx
 
@@ -68,12 +73,13 @@ if __name__=="__main__":
             success = False
         if success:
             print("Installation successful!")
-            if input("Add install directory (%s) to the PATH variable automatically? (y/N)") == 'y':
-                error = add_dir_to_usr_path_var(TARGET_DIR, USR_VAR_NAME)
-                if error:
-                    print("Could not add the install directory to the PATH variable: %s" % error)
-                else:
-                    print("Successfully added install directory to the PATH variable!")
+            # TODO uncomment once PATH append logic is in place
+            # if input("Add install directory (%s) to the PATH variable automatically? (y/N)") == 'y':
+            #     error = add_dir_to_usr_path_var(TARGET_DIR, USR_VAR_NAME)
+            #     if error:
+            #         print("Could not add the install directory to the PATH variable: %s" % error)
+            #     else:
+            #         print("Successfully added install directory to the PATH variable!")
         else:
             print("Installation failed!")
 
