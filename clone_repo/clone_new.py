@@ -38,17 +38,6 @@ args = parser.parse_args()
 target_path = pathlib.Path(args.target_path) / TEMP_DIR_NAME
 cleaned_project_name = args.project_name.replace(" ", "-")
 
-# determine if the user is trying to create a repo from scratch, or just pull the template into an existing repo
-# TODO do this later 
-# print("Do you want to create a repo from scratch (press '1'), or move template files into an existing repo (press '2')?")
-# res = input()
-# if res == "1":
-#     clone_existing = False
-# elif res == "2":
-#     clone_existing = True
-# else
-#     print("Invalid response ('%s') received. Exiting." % res)
-
 # check paths
 if target_path.exists() and len(list(target_path.glob("*"))) != 0:
     exit("ERROR: Files were found in the target directory. This tool will only work on a blank directory.")
