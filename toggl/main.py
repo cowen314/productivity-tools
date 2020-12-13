@@ -129,10 +129,18 @@ class ExampleEntryImporter(_EntryImporter):
             if skip_logic(entry.client_and_project, entry.service_item):
                 print("Skipped: " + str(entry))
                 continue
+            time_hrs_rounded = None
+            if entry.time_ms:
+                time_hrs = entry.time_ms / 1000.0 / 60 / 60
+                # convert to hours, round to the nearest 15 minute increment
+                time_hrs_rounded = (float(int((time_hrs + 0.125) * 4))) / 4
+                if time_hrs_rounded <= 0:
+                    print("Skipped: " + str(entry) + ". Insufficient time.")
+                    continue
             pyautogui.hotkey('ctrl', 'n')
             time.sleep(slowdown_factor*1)
             pyautogui.hotkey('f2')
-            time.sleep(slowdown_factor*0.5)
+            time.sleep(slowdown_factor*0.3)
             if entry.client_and_project:
                 pyautogui.typewrite(entry.client_and_project, pause=0.2)
                 time.sleep(slowdown_factor*0.5)
@@ -145,12 +153,8 @@ class ExampleEntryImporter(_EntryImporter):
                 pyautogui.typewrite(entry.task)
                 time.sleep(slowdown_factor*0.25)
             pyautogui.hotkey('tab')
-            # convert to hours, round to the nearest 15 minute increment
-            if entry.time_ms:
-                time_hrs = entry.time_ms / 1000.0 / 60 / 60
-                time_hrs_rounded = (float(int((time_hrs + 0.125) * 4))) / 4
-                if time_hrs_rounded > 0:
-                    pyautogui.typewrite(str(time_hrs_rounded))
+            if time_hrs_rounded:
+                pyautogui.typewrite(str(time_hrs_rounded))
                 time.sleep(slowdown_factor*0.1)
             pyautogui.hotkey('tab')
             pyautogui.hotkey('tab')
