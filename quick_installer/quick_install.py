@@ -35,6 +35,14 @@ def copy_dist_to_target(source_path: Path, target_path: Path) -> bool:
     shutil.copytree(str(source_path), str(target_path))
 
 
+def add_context_shortcut():
+    # TODO
+    # Use the python registry editor module to add this thing to the context menu
+    # Python Module: https://docs.python.org/3/library/winreg.html
+    # https://stackoverflow.com/questions/20449316/how-add-context-menu-item-to-windows-explorer-for-folders
+    pass
+
+
 def add_dir_to_usr_path_var(path: Path, user_var_name: str) -> str:
     print("Saving value to path variable (%s <-- %s). Old values will be overwritten." % (USR_VAR_NAME, TARGET_DIR))
     subprocess.run(['setx', user_var_name, str(path.resolve())])
