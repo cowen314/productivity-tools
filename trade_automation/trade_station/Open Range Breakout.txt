@@ -1,53 +1,72 @@
 // Variables and Parameters
 
-Vars: Q(1)
-
 // Inputs
 
-Inputs: TradeQty(1), p0(2), p1(3), p2(5), p3(7) // TODO set quantity here
+Inputs: TradeQty(1), ORHigh(0), ORLow(0), p0(4), p1(8), p2(12), p3(16);
 
 // Capture the high and the low
 
-ORHigh = Max(High);  // TODO add legit capture of these things 
-ORLow = Min(Low);
-balance = 0
 // TODO place horizontal markers on the candlestick to indicate high and low
 
-Plot1(ORHigh);
-Plot2(ORLow);
+// Plot1(ORHigh);
+// Plot2(ORLow);
 
 // Trade logic
 
-// TODO what’s the best way to get the current price
 // OPT1: could place stop orders (immediately) like this:
 // buy 4*TradeQty stop order at ORHigh
 // short sell 4*TradeQty stop order at ORLow
 
+
+if time >= 0830 and time < 1515 then
+begin
 // OPT2: could do conditional market orders, like this:
-if MarketPosition = 0 and CurrentPrice crosses over ORHigh
-begin
-buy(“Buy4”) next bar TradeQty*4 at market;
-    // setStopContract;  // set the stop loss on a per contract basis
-    // setStopLoss(12.5); // get out after a quarter of a point of loss ($12.50 per contract). Dangerous if internet connection is lost. Probably best to place a stop order instead.
-    sell (“ExitLong”) next bar at ORHigh - 0.25 points stop  // stop order. Probably want to set the sell price at a quarter tick under the purchase price, rather than a quarter tick under ORHigh... TODO figure out how to do this
-    sell (“P0Sell”) TradeQty next bar at ORHigh + p0 limit // TODO are these orders cancelled once the stop order is hit?
-sell (“P1Sell”) TradeQty next bar at ORHigh + p1 limit
-sell (“P2Sell”) TradeQty next bar at ORHigh + p2 limit
-sell (“P3Sell”) TradeQty next bar at ORHigh + p3 limit
-end
+    if MarketPosition = 0 then
+    begin
+        if Close crosses over ORHigh then
+        begin
+            buy ( "Buy4" ) TradeQty*4 contracts next bar at market; // TODO make this a limit order. More certainty with a limit. Also, can we wait until the quantity offered dwindles to a certain number?
+            // setStopContract;  // set the stop loss on a per contract basis
+            // setStopLoss(12.5); // get out after a quarter of a point of loss ($12.50 per contract). Dangerous if internet connection is lost. Probably best to place a stop order instead.
+            sell ("ExitLongLoss") next bar at ORHigh - 0.25 points stop;  // stop order. Probably want to set the sell price at a quarter tick under the purchase price, rather than a quarter tick under ORHigh... TODO figure out how to do this
+        end;
+        if Close crosses under ORLow then
+        begin
+            sellShort ( "Sell4" ) TradeQty*4 contracts next bar at market; // TODO
+            sell ("ExitShortLoss") next bar at ORLow + 0.25 points stop;  // stop order. Probably want to set the sell price at a quarter tick under the purchase price, rather than a quarter tick under ORHigh... TODO figure out how to do this
+        end;
+    end;
+    if MarketPosition = 1 then
+    begin
+        sell ("ExitLongEven") next bar at ORHigh points stop;
+        sell ("P0Sell") TradeQty contracts next bar at ORHigh + p0 limit; // TODO are these orders cancelled once the stop order is hit?
+        sell ("P1Sell") TradeQty contracts next bar at ORHigh + p1 limit;
+        sell ("P2Sell") TradeQty contracts next bar at ORHigh + p2 limit;
+        sell ("P3Sell") TradeQty contracts next bar at ORHigh + p3 limit;
+    end;
+    if MarketPosition = -1 then
+    begin
+        sell ("ExitShortEven") next bar at ORLow points stop;
+        buy ("P0Buy") TradeQty contracts next bar at ORLow - p0 limit; // TODO are these orders cancelled once the stop order is hit?
+        buy ("P1Buy") TradeQty contracts next bar at ORLow - p1 limit;
+        buy ("P2Buy") TradeQty contracts next bar at ORLow - p2 limit;
+        buy ("P3Buy") TradeQty contracts next bar at ORLow - p3 limit;
+    end;
+end;
 
-if MarketPosition = 0 and CurrentPrice crosses over ORLow
+// TODO add logic to close EOD
+
+{if MarketPosition = 0 and Close crosses over ORLow then
 begin
-    sell short(“Short4”) next bar TradeQty*4 at market;
+    sell short("Short4") TradeQty*4 contracts next bar at market;
     // TODO fill this out when the general buy strategy has been worked out
-end
+end;
 
-if MarketPosition > -1  // if short
+if MarketPosition > -1 then  // if short
 begin
-if balance >= 4 and CurrentPrice crosses over ORLow - p0
-    buyToCover(“coverP0”) next bar TradeQty at market;
-// TODO figure out how to cover part of a short
+    if balance >= 4 and CurrentPrice crosses over ORLow - p0
+        buyToCover("coverP0") next bar TradeQty at market;
 // TODO fill the rest in after checking syntax
-end
+end;}
 
 // TODO figure out how to ask for confirmation on each trade (maybe see page 103 in the reference)
