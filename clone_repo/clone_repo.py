@@ -1,39 +1,47 @@
 import argparse
 import subprocess
-import pathlib
+from pathlib import Path
 import json
 import shutil
 import urllib.parse
 import posixpath
 import datetime
-from sys import exit
+import sys
 
 TEMP_DIR_NAME = ".repo-creator"
-CONFIG_FILENAME = "cloneconfig.json"
+CONFIG_FILENAME = "cloneconfig.json"  # FIXME this currently goes into the clone parent dir, not the
 DEFAULT_CONFIG = {
     "default_namespace": "DMC/labview/",
     "default_template_url": "https://git.dmcinfo.com/DMC/labview/labview-template-project.git",
     "default_dest_base_url": "https://git.dmcinfo.com/"
 }
+if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):  # if in the context of a PyInstaller bundled application
+    EXE_DIR = Path(sys._MEIPASS)
+else:
+    EXE_DIR = Path(__file__).parent
 
 
 def exit_with_error(msg: str, running_as_wizard: bool):
     if not running_as_wizard:
-        exit(str)
+        sys.exit(str)
     else:
         input("FAIL: %s\nPress enter to exit." % msg)
-        exit()
+        sys.exit("Exiting...")
 
 
 # read in config file, create a new one if none exists
+CONFIG_PATH = Path.cwd() / EXE_DIR / CONFIG_FILENAME
 try:
-    with open(pathlib.Path(CONFIG_FILENAME)) as fh:
+    with open(CONFIG_PATH) as fh:
         config = json.load(fh)
 except Exception as e:
     config = DEFAULT_CONFIG
-    pathlib.Path(CONFIG_FILENAME).touch()
-    with open(pathlib.Path(CONFIG_FILENAME), "w") as fh:
-        json.dump(config, fh, indent=4, sort_keys=True)
+    try:
+        CONFIG_PATH.touch()
+        with open(CONFIG_PATH, "w") as fh:
+            json.dump(config, fh, indent=4, sort_keys=True)
+    except PermissionError:
+        print("INFO: No permission to create '%s'. This is OK for most cases. Run as an admin if a config file is needed.\n" % CONFIG_PATH)
 
 # set up command line interface
 parser = argparse.ArgumentParser()
@@ -46,14 +54,15 @@ parser.add_argument("--wizard", help="Run this tool with a wizard to walk throug
 
 # parse args
 args = parser.parse_args()
-if not args.wizard and not args.project_name:
-    exit_with_error("Must supply either a project name, or set the --wizard flag to true", args.wizard)
+if not args.project_name:
+    args.wizard = True  # set the wizard true if no project name
+    # exit_with_error("Must supply either a project name, or set the --wizard flag to true", args.wizard)
 
 # if the wizard flag was set, run the user through the wizard
 if args.wizard:
     args.project_name = input("Enter the name of your repo / project: ")  # TODO add check for invalid chars
     if args.project_name.strip() == "":
-        exit_with_error("", args.wizard)
+        exit_with_error("Invalid project name", args.wizard)
     ns = input("Enter the project namespace (leave blank for default: '%s'): " % config["default_namespace"])
     if ns.strip() != "":
         args.namespace = ns
@@ -69,7 +78,7 @@ if args.wizard:
     if tp.strip() != "":
         args.target_path = tp
 
-target_path = pathlib.Path(args.target_path) / TEMP_DIR_NAME
+target_path = Path(args.target_path) / TEMP_DIR_NAME
 args.project_name = args.project_name.replace(" ", "-")  # clean the project name
 
 # check paths
@@ -178,3 +187,5 @@ print("SUCCESS: Repository created successfully!"
       "\nURL of new project is %s."
       "\nProject visibility is currently set to private, navigate to %s to update it."
       "\nAll code sourced from %s" % (new_project_url, project_settings_url, args.template_url))
+if args.wizard:
+    input("Press enter to exit")
