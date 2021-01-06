@@ -1,3 +1,5 @@
 cloneconfig.json
 /test
 /.repo-creator
+/build
+/dist
