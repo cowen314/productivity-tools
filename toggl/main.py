@@ -124,7 +124,7 @@ class _EntryImporter:
 class ExampleEntryImporter(_EntryImporter):
     def import_entries(self, entries: Iterable[TimeEntry], skip_logic: Callable[[str, str], bool], slowdown_factor: float = 1):
         pyautogui.alert("Open timer and set the correct date. Press OK when ready to auto import time. Slam mouse into one of the corners of the screen at any point to cancel the sequence.")
-        time.sleep(slowdown_factor*2)
+        time.sleep(slowdown_factor*1.25)
         for entry in entries:
             if skip_logic(entry.client_and_project, entry.service_item):
                 print("Skipped: " + str(entry))
