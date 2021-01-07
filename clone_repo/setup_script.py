@@ -25,6 +25,7 @@ def copy_dist_to_target(source_path: Path, target_path: Path) -> bool:
                      "OK to delete these files? (y/N)" % target_path) == 'y':
                 shutil.rmtree(target_path)
             else:
+                print("User cancelled the operation")
                 return False
         else:
             target_path.rmdir()  # remove this dir to avoid error from shutil.copytree
@@ -63,7 +64,10 @@ if __name__=="__main__":
     if input("Ready to start installing? (y/N)") == 'y':
         try:
             success = copy_dist_to_target(DIST_DIR, TARGET_DIR)
-            add_context_shortcut("Clone Repo", "%s --wizard" % str(Path.resolve(TARGET_DIR / EXE_NAME)))
+            if not success:
+                raise RuntimeError("Failed to copy distribution (%s) to target directory (%s)" % (DIST_DIR, TARGET_DIR))
+            if success:
+                add_context_shortcut("Clone Repo", "%s --wizard" % str(Path.resolve(TARGET_DIR / EXE_NAME)))
             # other setup steps can go here
         except Exception as e:
             print("Caught exception:")
