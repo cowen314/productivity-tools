@@ -135,7 +135,8 @@ po = subprocess.run(
     cwd=repo_dir.resolve())
 if po.returncode > 0:
     # shutil.rmtree(repo_dir)
-    exit_with_error("ERROR: Failed to create new repository (does it already exist?)\n" + po.stderr.decode('ascii'), args.wizard)
+    exit_with_error("ERROR: Failed to create new repository (does it already exist? do you have proper permissions to "
+                    "push to this group?)\n" + po.stderr.decode('ascii'), args.wizard)
 elif len(po.stdout) > 0:
     print(po.stdout.decode('ascii'))
 
