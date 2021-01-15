@@ -12,7 +12,7 @@ TEMP_DIR_NAME = ".repo-creator"
 CONFIG_FILENAME = "cloneconfig.json"  # FIXME this currently goes into the clone parent dir, not the
 DEFAULT_CONFIG = {
     "default_namespace": "DMC/labview/",
-    "default_template_url": "https://git.dmcinfo.com/DMC/labview/labview-template-project.git",
+    "default_template_url": "https://git.dmcinfo.com/DMC/labview/dmc-templates/labview-template-project.git",
     "default_dest_base_url": "https://git.dmcinfo.com/"
 }
 if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):  # if in the context of a PyInstaller bundled application
@@ -63,7 +63,7 @@ if args.wizard:
     args.project_name = input("Enter the name of your repo / project: ")  # TODO add check for invalid chars
     if args.project_name.strip() == "":
         exit_with_error("Invalid project name", args.wizard)
-    ns = input("Enter the project namespace (leave blank for default: '%s'): " % config["default_namespace"])
+    ns = input("Enter the project namespace (usually this has the format 'DMC/<customerName>', for example 'DMC/MyGreatCustomer/'; leave blank for default: '%s'): " % config["default_namespace"])
     if ns.strip() != "":
         args.namespace = ns
     tr = input("Enter the template repository to copy to the newly created repo (leave blank for default: '%s'): "
