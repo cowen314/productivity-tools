@@ -63,7 +63,7 @@ if args.wizard:
     args.project_name = input("Enter the name of your repo / project: ")  # TODO add check for invalid chars
     if args.project_name.strip() == "":
         exit_with_error("Invalid project name", args.wizard)
-    ns = input("Enter the project namespace (usually this has the format 'DMC/<customerName>', for example 'DMC/MyGreatCustomer/'; leave blank for default: '%s'): " % config["default_namespace"])
+    ns = input("Enter the project namespace (usually this has the format '<customerName>/', for example 'MyGreatCustomer/'; leave blank for default: '%s'): " % config["default_namespace"])
     if ns.strip() != "":
         args.namespace = ns
     tr = input("Enter the template repository to copy to the newly created repo (leave blank for default: '%s'): "
