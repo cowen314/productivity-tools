@@ -7,10 +7,10 @@ import winreg
 
 
 # Define to install process
-DIST_DIR = Path("./clone_repo")
-TARGET_DIR = Path(os.environ['APPDATA']) / "productivity-tools" / "clone-repo"
-EXE_NAME = "clone_repo.exe"
-USR_VAR_NAME = "CloneRepo"
+DIST_DIR = Path("./duplicate_repo")
+TARGET_DIR = Path(os.environ['APPDATA']) / "productivity-tools" / "duplicate-repo"
+EXE_NAME = "duplicate_repo.exe"
+USR_VAR_NAME = "DuplicateRepo"
 
 
 def copy_dist_to_target(source_path: Path, target_path: Path) -> bool:
@@ -69,7 +69,7 @@ if __name__=="__main__":
             if not success:
                 raise RuntimeError("Failed to copy distribution (%s) to target directory (%s)" % (DIST_DIR, TARGET_DIR))
             if success:
-                add_context_shortcut("Clone Repo", "%s --wizard" % str(Path.resolve(TARGET_DIR / EXE_NAME)))
+                add_context_shortcut("Duplicate Repo", "%s --wizard" % str(Path.resolve(TARGET_DIR / EXE_NAME)))
             # other setup steps can go here
         except Exception as e:
             print("Caught exception:")
