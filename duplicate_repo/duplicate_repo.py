@@ -108,55 +108,18 @@ target_path.mkdir(parents=True, exist_ok=True)
 
 # clone some template repo into current repo (use subprocess), do it into a temp dir
 call_cli("git clone %s" % args.template_url, args.wizard, target_path.resolve(), pre_msg="Cloning template from %s" % args.template_url)
-# print("Cloning template from %s" % args.template_url)
-# po = subprocess.run(
-#     ["git", "clone", args.template_url],
-#     capture_output=True,
-#     cwd=target_path.resolve())
-# if po.returncode > 0:
-#     exit_with_error("ERROR: " + po.stderr.decode('ascii'), args.wizard)
-# elif len(po.stdout) > 0:
-#     print(po.stdout.decode('ascii'))
 
 # grab repo dir
 repo_dir = list(target_path.glob("*"))[0]  # there should only be one folder at the target path after the clone
 
 # pull lfs content
 call_cli("git lfs pull", args.wizard, repo_dir.resolve(), pre_msg="Pulling LFS content")
-# print("Pulling LFS content")
-# po = subprocess.run(
-#     ["git", "lfs", "pull"],
-#     capture_output=True,
-#     cwd=repo_dir.resolve())
-# if po.returncode > 0:
-#     # shutil.rmtree(repo_dir)
-#     exit_with_error("ERROR: " + po.stderr.decode('ascii'), args.wizard)
-# elif len(po.stdout) > 0:
-#     print(po.stdout.decode('ascii'))
 
 # fetch deleted lfs content
 call_cli("git lfs fetch --all", args.wizard, repo_dir.resolve(), pre_msg="Pulling LFS content")
-# print("Pulling LFS content")
-# po = subprocess.run(
-#     ["git", "lfs", "fetch", "--all"],
-#     capture_output=True,
-#     cwd=repo_dir.resolve())
-# if po.returncode > 0:
-#     exit_with_error("ERROR: " + po.stderr.decode('ascii'), args.wizard)
-# elif len(po.stdout) > 0:
-#     print(po.stdout.decode('ascii'))
 
 # remove the remote ref
 call_cli("git remote remove origin", args.wizard, repo_dir.resolve(), pre_msg="Removing original remote")
-# po = subprocess.run(
-#     ["git", "remote", "remove", "origin"],
-#     capture_output=True,
-#     cwd=repo_dir.resolve())
-# if po.returncode > 0:
-#     # shutil.rmtree(repo_dir)
-#     exit_with_error("ERROR: " + po.stderr.decode('ascii'), args.wizard)
-# elif len(po.stdout) > 0:
-#     print(po.stdout.decode('ascii'))
 
 # hit the command to add a new repo to the remote
 # (https://docs.gitlab.com/ee/gitlab-basics/create-project.html#push-to-create-a-new-project)
@@ -167,29 +130,9 @@ call_cli("git push --set-upstream %s master" % new_project_url, args.wizard, rep
          pre_msg="Pushing to new project at %s" % new_project_url,
          custom_err_msg="Failed to create new repository (does it already exist? do you have proper permissions to "
                         "push to this group?")
-# print("Pushing to new project at %s" % new_project_url)
-# po = subprocess.run(
-#     ["git", "push", "--set-upstream", new_project_url, "master"],
-#     capture_output=True,
-#     cwd=repo_dir.resolve())
-# if po.returncode > 0:
-#     # shutil.rmtree(repo_dir)
-#     exit_with_error("ERROR: Failed to create new repository (does it already exist? do you have proper permissions to "
-#                     "push to this group?)\n" + po.stderr.decode('ascii'), args.wizard)
-# elif len(po.stdout) > 0:
-#     print(po.stdout.decode('ascii'))
 
 # add ref to origin
 call_cli("git remote add origin %s" % new_project_url, args.wizard, repo_dir.resolve(), pre_msg="Adding new remote")
-# po = subprocess.run(
-#     ["git", "remote", "add", "origin", new_project_url],
-#     capture_output=True,
-#     cwd=repo_dir.resolve())
-# if po.returncode > 0:
-#     # shutil.rmtree(repo_dir)
-#     exit_with_error("ERROR: " + po.stderr.decode('ascii'), args.wizard)
-# elif len(po.stdout) > 0:
-#     print(po.stdout.decode('ascii'))
 
 # add "initial" commit
 # print("Adding initial commit")
@@ -210,16 +153,6 @@ elif len(po.stdout) > 0:
 print("---")
 
 call_cli("git push", args.wizard, repo_dir.resolve(), pre_msg="Pushing")
-# print("Pushing")
-# po = subprocess.run(
-#     ["git", "push"],
-#     capture_output=True,
-#     cwd=repo_dir.resolve())
-# if po.returncode > 0:
-#     # shutil.rmtree(repo_dir)
-#     exit_with_error("ERROR: " + po.stderr.decode('ascii'), args.wizard)
-# elif len(po.stdout) > 0:
-#     print(po.stdout.decode('ascii'))
 
 print(" > Moving out of temporary directory")
 repo_dir.rename(repo_dir.parent.parent / args.project_name)  # move up a directory, into appropriately named folder
