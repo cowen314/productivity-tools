@@ -47,17 +47,11 @@ def add_context_shortcut(shortcut_name: str, command: str):
     @param shortcut_name: the name of the shortcut to show up in the context menu
     @param command: the command to execute (e.g. `C:\Program Files\DoThing.exe --verbose`)
     """
-    # Use the python registry editor module to add this thing to the context menu
-    # Python Module: https://docs.python.org/3/library/winreg.html
-    # https://stackoverflow.com/questions/20449316/how-add-context-menu-item-to-windows-explorer-for-folders
-    root = winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_USER)
-    shell_path = r"Software\Classes\Directory\Background\shell"
-    shell_key = winreg.OpenKey(root, shell_path)
-    winreg.SetValue(shell_key, r"%s\command" % shortcut_name, winreg.REG_SZ, command)
-    full_path = r'%s\%s\command' % (shell_path, shortcut_name)
-    print("Set value of registry key '%s' to '%s'" % (full_path, command))
-    shell_key.Close()
-    root.Close()
+    print("Connecting to the registry...")
+    full_path = r"Software\Classes\Directory\Background\shell\%s\command" % shortcut_name
+    print(r"Setting the value of registry key HKEY_CURRENT_USER\%s to '%s'" % (full_path, command))
+    winreg.SetValue(winreg.HKEY_CURRENT_USER, full_path, winreg.REG_SZ, command)
+    print("Set key sucessfully!")
 
 
 def add_dir_to_usr_path_var(path: Path, user_var_name: str) -> str:

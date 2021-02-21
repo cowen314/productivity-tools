@@ -49,15 +49,10 @@ def add_context_shortcut(shortcut_name: str, command: str):
     # Python Module: https://docs.python.org/3/library/winreg.html
     # https://stackoverflow.com/questions/20449316/how-add-context-menu-item-to-windows-explorer-for-folders
     print("Connecting to the registry...")
-    root = winreg.ConnectRegistry(None, winreg.HKEY_CURRENT_USER)
-    shell_path = r"Software\Classes\Directory\Background\shell"
-    shell_key = winreg.OpenKey(root, shell_path)
-    full_path = r'%s\%s\command' % (shell_path, shortcut_name)
-    print("Setting the value of registry key '%s' to '%s'" % (full_path, command))
-    winreg.SetValue(shell_key, r"%s\command" % shortcut_name, winreg.REG_SZ, command)
+    full_path = r"Software\Classes\Directory\Background\shell\%s\command" % shortcut_name
+    print(r"Setting the value of registry key HKEY_CURRENT_USER\%s to '%s'" % (full_path, command))
+    winreg.SetValue(winreg.HKEY_CURRENT_USER, full_path, winreg.REG_SZ, command)
     print("Set key sucessfully!")
-    shell_key.Close()
-    root.Close()
 
 
 if __name__=="__main__":
