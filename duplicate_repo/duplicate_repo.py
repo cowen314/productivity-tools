@@ -29,6 +29,22 @@ def exit_with_error(msg: str, running_as_wizard: bool):
         sys.exit("Exiting...")
 
 
+def call_cli(command: str, running_as_wizard: bool, pre_msg: str = None, custom_err_msg: str = None):
+    if pre_msg:
+        print(" > %s" % pre_msg)
+    po = subprocess.run(
+        command.split(" "),
+        capture_output=True,
+        cwd=repo_dir.resolve())
+    if po.returncode > 0:
+        if custom_err_msg:
+            exit_with_error("ERROR: %s, %s" % (po.stderr.decode('ascii'), custom_err_msg), running_as_wizard)
+        else:
+            exit_with_error("ERROR: " + po.stderr.decode('ascii'), running_as_wizard)
+    elif len(po.stdout) > 0:
+        print(po.stdout.decode('ascii'))
+
+
 # read in config file, create a new one if none exists
 CONFIG_PATH = Path.cwd() / EXE_DIR / CONFIG_FILENAME
 try:
@@ -108,6 +124,17 @@ po = subprocess.run(
     cwd=repo_dir.resolve())
 if po.returncode > 0:
     # shutil.rmtree(repo_dir)
+    exit_with_error("ERROR: " + po.stderr.decode('ascii'), args.wizard)
+elif len(po.stdout) > 0:
+    print(po.stdout.decode('ascii'))
+
+# fetch deleted lfs content
+print("Pulling LFS content")
+po = subprocess.run(
+    ["git", "lfs", "fetch", "--all"],
+    capture_output=True,
+    cwd=repo_dir.resolve())
+if po.returncode > 0:
     exit_with_error("ERROR: " + po.stderr.decode('ascii'), args.wizard)
 elif len(po.stdout) > 0:
     print(po.stdout.decode('ascii'))
