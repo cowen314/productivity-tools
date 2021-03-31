@@ -9,7 +9,7 @@ cssselect==1.1.0
 hyperlink==19.0.0
 idna==2.8
 incremental==17.5.0
-lxml==4.5.0
+lxml==4.6.3
 MouseInfo==0.1.2
 mypy==0.761
 mypy-extensions==0.4.3
