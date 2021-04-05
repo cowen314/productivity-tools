@@ -19,7 +19,7 @@
 from flask import Flask, render_template, request
 from typing import List, Tuple, Iterable
 from requests import get
-from toggl.main import pull_and_import_single_day, Toggl, ExampleParser, ExampleEntryImporter
+from toggl.main import pull_and_import_single_day, Toggl, ExampleParser, DmcTimerImporter
 from toggl.private_data import api_key
 from random import random
 

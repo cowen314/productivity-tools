@@ -46,7 +46,7 @@ class TimeEntry:
         self.description: str = description
 
     def __str__(self):
-        return "c&p: %s; service_item: %s; task: %s; time_hr: %s; desc: %s" % (
+        return "c&p: %s; service_item: %s; task: %s; time_hr: %.2f; desc: %s" % (
             self.client_and_project,
             self.service_item,
             self.task,
@@ -117,11 +117,11 @@ class ExampleParser(_EntryParser):
 
 class _EntryImporter:
     @abstractmethod
-    def import_entries(self, entries: List[TimeEntry], skip_logic: Callable[[str, str], bool], slowdown_factor: float = 1):
+    def import_entries(self, entries: Iterable[TimeEntry], skip_logic: Callable[[str, str], bool], slowdown_factor: float = 1):
         raise NotImplementedError
 
 
-class ExampleEntryImporter(_EntryImporter):
+class DmcTimerImporter(_EntryImporter):
     def import_entries(self, entries: Iterable[TimeEntry], skip_logic: Callable[[str, str], bool], slowdown_factor: float = 1):
         pyautogui.alert("Open timer and set the correct date. Press OK when ready to auto import time. Slam mouse into one of the corners of the screen at any point to cancel the sequence.")
         time.sleep(slowdown_factor*1.25)
@@ -168,8 +168,34 @@ class ExampleEntryImporter(_EntryImporter):
         pyautogui.alert("Time entry complete")
 
 
+class TextDumpExporter(_EntryImporter):
+    def import_entries(self, entries: Iterable[TimeEntry], skip_logic: Callable[[str, str], bool],
+                       slowdown_factor: float = 1):
+        i = 1
+        for entry in entries:
+            time_hrs_rounded = 0
+            if entry.time_ms:
+                time_hrs = entry.time_ms / 1000.0 / 60 / 60
+                # convert to hours, round to the nearest 15 minute increment
+                time_hrs_rounded = (float(int((time_hrs + 0.125) * 4))) / 4
+                if time_hrs_rounded <= 0:
+                    # print("Skipped: " + str(entry) + ". Insufficient time.")
+                    continue
+            entry_str = "%s -- %s\t%s\t%s\t%.2f\n%s" % (
+                i,
+                entry.client_and_project,
+                entry.service_item,
+                entry.task,
+                time_hrs_rounded,
+                entry.description
+            )
+            print(entry_str)
+            i+=1
+
+
 def pull_and_import_single_day(date,
                                api_key,
+                               importer: _EntryImporter = DmcTimerImporter(),
                                toggl_project_to_client_name_map: Dict[str, str] = {},
                                toggl_project_name_map: Dict[str, str] = {},
                                skip_logic: Callable[[str, str], bool] = lambda cp, ser_it: False,
@@ -182,11 +208,13 @@ def pull_and_import_single_day(date,
     @param skip_logic: a function that takes parameters (client_and_project: str, service_item: str) and returns
         True if the any item meeting those conditions should be skipped and False otherwise
     @param slowdown_factor: a multiplier applied to import waits. Increase the value of this parameter to run the import process more slowly.
+    @param importer: an importer to use to output parsed data
 
     General strategy:
     - use toggl API to pull report data
         - a summary report that's grouped by project and subgrouped by time_entries should work (see https://github.com/toggl/toggl_api_docs/blob/master/reports/summary.md)
     - use some automation tool to import time to timer
+
     """
 
     # grab raw data from the Toggl
@@ -203,9 +231,8 @@ def pull_and_import_single_day(date,
     parsed_data = e.parse_summary_entry_data(data)
     for day in parsed_data:
         print(day)
-
+    print("---")
     # import it
-    importer = ExampleEntryImporter()
     importer.import_entries(parsed_data, skip_logic, slowdown_factor=slowdown_factor)
 
 
