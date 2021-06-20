@@ -5,7 +5,7 @@ from abc import abstractmethod
 
 class Toggl:
     _BASE_SUMMARY_URL = "https://api.track.toggl.com/reports/api/v2/summary"
-    _WORKSPACES_URL = "https://www.api.track.toggl.com/api/v8/workspaces"
+    _WORKSPACES_URL = "https://api.track.toggl.com/api/v8/workspaces"
     _PASSWORD = "api_token"
 
     def __init__(self, api_key: str, workspace_id: int = None, user_agent: str = "api_test"):
