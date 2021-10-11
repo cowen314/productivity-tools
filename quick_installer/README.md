@@ -4,7 +4,7 @@
 
 This is a boilerplate script, written in Python, that performs installation of a simple desktop application.
 
-In the past, I've used PyInstaller to generate an executable from this script (called something like `setup.exe`). That executable can be distrubuted along with your application and run once to install the application.
+In the past, I've used PyInstaller to generate an executable from this script (called something like `setup.exe`), then distrubuted that executable along with the application to install. Users then run `setup.exe` to install the application.
 
 ## How to use
 
