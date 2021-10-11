@@ -7,7 +7,7 @@ import winreg
 
 if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):  # if in the context of a PyInstaller bundled application
     # EXE_DIR = Path(sys._MEIPASS)  # Use this if bundling as a directory with PyInstaller
-    EXE_DIR = Path(sys.executable)  # Use this if bundling as a single file with PyInstaller
+    EXE_DIR = Path(sys.executable).parent  # Use this if bundling as a single file with PyInstaller
 else:
     EXE_DIR = Path(__file__).parent
     
