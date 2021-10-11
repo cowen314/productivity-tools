@@ -5,9 +5,15 @@ import subprocess
 import traceback
 import winreg
 
+if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):  # if in the context of a PyInstaller bundled application
+    # EXE_DIR = Path(sys._MEIPASS)  # Use this if bundling as a directory with PyInstaller
+    EXE_DIR = Path(sys.executable)  # Use this if bundling as a single file with PyInstaller
+else:
+    EXE_DIR = Path(__file__).parent
+    
 
-# Define to install process
-DIST_DIR = Path("./MyApp")  # TODO put a RELATIVE path to the distribution folder here
+# Define key directories
+DIST_DIR = Path(EXE_DIR) / "MyApp"  # TODO put a RELATIVE path to your application here
 TARGET_DIR = Path(os.environ['PROGRAMFILES']) / "DeveloperName" / "AppName"  # TODO set this to the install path
 USR_VAR_NAME = "MyAppUsrVar"  # TODO set this to a unique user variable name (distinct to the application)
 
