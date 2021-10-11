@@ -10,7 +10,7 @@ In the past, I've used PyInstaller to generate an executable from this script (c
 
 1. Copy this script to your project
 2. Read through the TODOs; make updates as needed
-3. Build it into an executable with PyInstaller
+3. Build it into an executable with PyInstaller (e.g. `pyinstaller --onefile --name setup quick_install.py`)
 4. Distribute it with your application
 
 ## Features
