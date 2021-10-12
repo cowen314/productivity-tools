@@ -75,6 +75,12 @@ def copy_file_to_target(source_file: Path, destination_directory: Path) -> bool:
     if not destination_directory.exists():
         destination_directory.mkdir(parents=True, mode=0o777)
     destination_filepath = destination_directory / source_file.name
+    if destination_filepath.exists():
+        if input(f"Found file at ({destination_filepath}). This is likely hanging around from a previous install. OK to "
+                 f"delete this file? (y/N)") == 'y':
+            destination_filepath.unlink()
+        else:
+            return False
     print("Copying to file at path %s" % destination_filepath)
     shutil.copyfile(str(source_file), str(destination_filepath))
     return True  # if no errors, assume that the copy was a success
