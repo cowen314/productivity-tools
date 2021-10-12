@@ -4,6 +4,8 @@ import shutil
 import subprocess
 import traceback
 import winreg
+import sys
+
 
 if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):  # if in the context of a PyInstaller bundled application
     # EXE_DIR = Path(sys._MEIPASS)  # Use this if bundling as a directory with PyInstaller
