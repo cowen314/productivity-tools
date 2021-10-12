@@ -40,6 +40,7 @@ def copy_dist_to_target(source_path: Path, target_path: Path) -> bool:
             target_path.rmdir()  # remove this dir to avoid error from shutil.copytree
     print("Installing to %s" % target_path)
     shutil.copytree(str(source_path), str(target_path))
+    return True  # if no errors, assume that the copy was a success
 
 
 def add_dir_to_usr_var(path: Path, var_name: str):
