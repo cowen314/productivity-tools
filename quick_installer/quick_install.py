@@ -12,9 +12,10 @@ else:
     EXE_DIR = Path(__file__).parent
     
 
-# Define key directories
+# Define key paths
 DIST_DIR = Path(EXE_DIR) / "MyApp"  # TODO put a RELATIVE path to your application here
-TARGET_DIR = Path(os.environ['PROGRAMFILES']) / "DeveloperName" / "AppName"  # TODO set this to the install path
+CONFIG_FILE = Path(EXE_DIR) / "ExampleConfig.json"  # TODO replace with a RELATIVE path to a config file, if needed
+TARGET_DIR = Path(os.environ['PROGRAMFILES']) / "DeveloperName" / "AppName"  # TODO set the install path here
 USR_VAR_NAME = "MyAppUsrVar"  # TODO set this to a unique user variable name (distinct to the application)
 
 
@@ -23,23 +24,59 @@ def add_shortcut_to_desktop():
     pass
 
 
-def copy_dist_to_target(source_path: Path, target_path: Path) -> bool:
-    if source_path.exists():
-        print("Found source/distribution path at %s" % source_path.resolve())
-    else:
-        print("Unable to find the source/distribution directory, looked at %s" % source_path.resolve())
-        return False
-    if target_path.exists():
-        if len(list(target_path.glob("*"))) > 0:
-            if input("Files found in install directory (%s). This will be the case if updating from an older version. "
-                     "OK to delete these files? (y/N)" % target_path) == 'y':
-                shutil.rmtree(target_path)
+def clear_destination_directory(destination_dir: Path) -> bool:
+    if destination_dir.exists():
+        if len(list(destination_dir.glob("*"))) > 0:
+            if input(f"Files found in install directory ({destination_dir}). This will be the case if updating from an"
+                     f"older version. OK to delete these files? (y/N)") == 'y':
+                shutil.rmtree(destination_dir)
             else:
                 return False
         else:
-            target_path.rmdir()  # remove this dir to avoid error from shutil.copytree
-    print("Installing to %s" % target_path)
-    shutil.copytree(str(source_path), str(target_path))
+            destination_dir.rmdir()  # remove this dir to avoid error from shutil.copytree
+    return True
+
+
+def copy_dir_to_target(source_directory: Path, destination_directory: Path) -> bool:
+    """
+
+    Args:
+        source_directory: a folder to copy
+        destination_directory: the parent directory to copy source_directory into
+
+    Returns: True if copy was successful, False otherwise
+
+    """
+    if source_directory.exists() and source_directory.is_dir():
+        print("Found directory at %s" % source_directory.resolve())
+    else:
+        print("Unable to find required folder, looked at %s" % source_directory.resolve())
+        return False
+    print("Copying to %s" % destination_directory)
+    shutil.copytree(str(source_directory), str(destination_directory / source_directory.name))
+    return True  # if no errors, assume that the copy was a success
+
+
+def copy_file_to_target(source_file: Path, destination_directory: Path) -> bool:
+    """
+
+    Args:
+        source_file: a file to copy
+        destination_directory: the directory to copy source_file into
+
+    Returns: True if copy was successful, False otherwise
+
+    """
+    if source_file.exists() and source_file.is_file():
+        print("Found file at %s" % source_file.resolve())
+    else:
+        print("Unable to find required file, looked at %s" % source_file.resolve())
+        return False
+    if not destination_directory.exists():
+        destination_directory.mkdir(parents=True, mode=0o777)
+    destination_filepath = destination_directory / source_file.name
+    print("Copying to file at path %s" % destination_filepath)
+    shutil.copyfile(str(source_file), str(destination_filepath))
     return True  # if no errors, assume that the copy was a success
 
 
@@ -96,13 +133,17 @@ if __name__=="__main__":
     print("setup.exe")
     print("Be sure to run this installer as an admin")
     if input("Ready to start installing? (y/N)") == 'y':
+        clear_success = False
+        copy_dist_success = False
+        copy_config_success = False
         try:
-            success = copy_dist_to_target(DIST_DIR, TARGET_DIR)
+            clear_success = clear_destination_directory()
+            copy_dist_success = copy_dir_to_target(DIST_DIR, TARGET_DIR)
+            copy_config_success = copy_file_to_target(CONFIG_FILE, TARGET_DIR)
         except Exception as e:
             print("Caught exception:")
             traceback.print_exc()
-            success = False
-        if success:
+        if clear_success and copy_dist_success and copy_config_success:
             print("Installation successful!")
             # TODO uncomment once PATH append logic is in place
             # if input("Add install directory (%s) to the PATH variable automatically? (y/N)") == 'y':
