@@ -8,6 +8,7 @@ import posixpath
 import datetime
 import sys
 from version import version
+from App_DuplicateRepo import ToolUI
 
 print("---REPO DUPLICATOR v%s---" % version)
 
@@ -80,23 +81,40 @@ if not args.project_name:
 
 # if the wizard flag was set, run the user through the wizard
 if args.wizard:
-    args.project_name = input(" > Enter the name of your repo / project: ")  # TODO add check for invalid chars
-    if args.project_name.strip() == "":
+    toolUI = ToolUI(args.namespace, args.template_url, args.dest_base_url, args.target_path)
+    toolUI.launchUI()
+    if toolUI.project_name == "":
         exit_with_error(" > Invalid project name", args.wizard)
-    ns = input(" > Enter the project namespace (usually this has the format '<customerName>/', for example 'MyGreatCustomer/'; leave blank for default: '%s'): " % config["default_namespace"])
-    if ns.strip() != "":
-        args.namespace = ns
-    tr = input(" > Enter the template repository to copy to the newly created repo (leave blank for default: '%s'): "
-               % config["default_template_url"])
-    if tr.strip() != "":
-        args.template_url = tr
-    bu = input(" > Enter the URL base for the new Gitlab repo / project. This URL should not contain the namespace or "
-               "project. (default: %s): " % config["default_dest_base_url"])
-    if bu.strip() != "":
-        args.dest_base_url = bu
-    tp = input(" > Enter the local path to copy files into (leave blank for this directory): ")
-    if tp.strip() != "":
-        args.target_path = tp
+    args.project_name = toolUI.project_name
+    args.namespace = toolUI.namespace
+    args.template_url = toolUI.template_url
+    args.dest_base_url = toolUI.dest_base_url
+    args.target_path = toolUI.target_path
+
+    print("---Parameter Setting Completed---")
+    print("Project Name: %s" % toolUI.project_name)
+    print("Namespace: %s" % toolUI.namespace)
+    print("Template URL: %s" % toolUI.template_url)
+    print("Dest Base URL: %s" % toolUI.dest_base_url)
+    print("Target Path: %s" % toolUI.target_path)
+
+    # args.project_name = input(" > Enter the name of your repo / project: ")  # TODO add check for invalid chars
+    # if args.project_name.strip() == "":
+    #     exit_with_error(" > Invalid project name", args.wizard)
+    # ns = input(" > Enter the project namespace (usually this has the format '<customerName>/', for example 'MyGreatCustomer/'; leave blank for default: '%s'): " % config["default_namespace"])
+    # if ns.strip() != "":
+    #     args.namespace = ns
+    # tr = input(" > Enter the template repository to copy to the newly created repo (leave blank for default: '%s'): "
+    #         % config["default_template_url"])
+    # if tr.strip() != "":
+    #     args.template_url = tr
+    # bu = input(" > Enter the URL base for the new Gitlab repo / project. This URL should not contain the namespace or "
+    #         "project. (default: %s): " % config["default_dest_base_url"])
+    # if bu.strip() != "":
+    #     args.dest_base_url = bu
+    # tp = input(" > Enter the local path to copy files into (leave blank for this directory): ")
+    # if tp.strip() != "":
+    #     args.target_path = tp
 
 target_path = Path(args.target_path) / TEMP_DIR_NAME
 args.project_name = args.project_name.replace(" ", "-")  # clean the project name
