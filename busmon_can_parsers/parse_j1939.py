@@ -12,7 +12,7 @@ class J1939Frame:
 
 
 trace_path = Path(
-    "C:/Users/christiano/DMC SharePoint/Mercury Marine Test Stand - Documents/DMC Only (Private)/Diagnostic CAN Traces/2021 08 20 Files from Georgi/2021_08_20_2690328_Step1.xlsx")
+    "C:/Users/christiano/DMC SharePoint/Mercury Marine Test Stand - Documents/DMC Only (Private)/Diagnostic CAN Traces/2021 09 08 From Georgi/2021 09 08 BusMonitorResults.xlsx")
 
 '''
 below is a loop that runs through all frames in the trace looking for DM14 write operations
@@ -33,9 +33,11 @@ for frame_label, frame in trace_df.iterrows():
                 search_for_dm_write_start = False
                 # parameter_bytes = payload[2:5]
                 parameter_value = payload[2] + (payload[3] << 8) + (payload[4] << 16)
-                print(f"- Found DM write frame, pointer was '{parameter_value}'")
+                # print(f"- Found DM write frame, pointer was '{hex(parameter_value)}'")
+                print(f"* Address '{hex(parameter_value)}'")
     if not search_for_dm_write_start:
         # not searching for a DM exchange, so must be searching for DM16 message
         if pgn_format == 0xd7:  # DM16
-            print(f"\t- DM16 found, data written was {frame['Payload']}")
+            # print(f"\t- DM16 found, data written was {frame['Payload']}")
+            print(f"\t* {frame['Payload']}")
             search_for_dm_write_start = True  # reset so that we look for the next DM14 write

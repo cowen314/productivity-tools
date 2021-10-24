@@ -35,7 +35,8 @@ class Toggl:
 
 
 class TimeEntry:
-    def __init__(self, client_and_project: str = None, service_item: str = None, task: str = None, time_ms: int = None, description: str = None):
+    def __init__(self, client_and_project: str = None, service_item: str = None, task: str = None, time_ms: int = None,
+                 description: str = None):
         """
         @param client_and_project: the client and project in the form <client>:<project>
         """
@@ -57,17 +58,33 @@ class TimeEntry:
 
 class _EntryParser:
     @abstractmethod
-    def parse_summary_entry_data(self, daily_data: Dict):
+    def parse_summary_entry_data(self, daily_data: Dict) -> Iterable[TimeEntry]:
         """
         @param daily_data: data for a single day
         """
         raise NotImplementedError
 
 
+def _merge_entry(entries: Iterable[TimeEntry], new_entry: TimeEntry) -> Iterable[TimeEntry]:
+    entries = list(entries)  # make a value copy of entries
+    found_matching = False
+    for existing_entry in entries:
+        if existing_entry.client_and_project == new_entry.client_and_project and \
+                existing_entry.service_item == new_entry.service_item and \
+                existing_entry.task == new_entry.task:
+            existing_entry.time_ms += new_entry.time_ms
+            existing_entry.description += " " + new_entry.description
+            found_matching = True
+            break
+    if not found_matching:
+        entries.append(new_entry)
+    return entries
+
+
 class ExampleParser(_EntryParser):
     def __init__(self,
-                 toggl_project_to_client_name_map: Dict[str, str]={},
-                 toggl_project_name_map: Dict[str, str]={}):
+                 toggl_project_to_client_name_map: Dict[str, str] = {},
+                 toggl_project_name_map: Dict[str, str] = {}):
         self._toggl_project_to_client_name_map = toggl_project_to_client_name_map
         self._toggl_project_name_map = toggl_project_name_map
 
@@ -111,20 +128,23 @@ class ExampleParser(_EntryParser):
                 elif len(toggl_entry_info) == 1:
                     entry.description = toggl_entry_info[0]
                 entry.time_ms = toggl_info['time']
-                time_entries.append(entry)
+                time_entries = _merge_entry(time_entries, entry)
         return time_entries
 
 
 class _EntryImporter:
     @abstractmethod
-    def import_entries(self, entries: Iterable[TimeEntry], skip_logic: Callable[[str, str], bool], slowdown_factor: float = 1):
+    def import_entries(self, entries: Iterable[TimeEntry], skip_logic: Callable[[str, str], bool],
+                       slowdown_factor: float = 1):
         raise NotImplementedError
 
 
 class DmcTimerImporter(_EntryImporter):
-    def import_entries(self, entries: Iterable[TimeEntry], skip_logic: Callable[[str, str], bool], slowdown_factor: float = 1):
-        pyautogui.alert("Open timer and set the correct date. Press OK when ready to auto import time. Slam mouse into one of the corners of the screen at any point to cancel the sequence.")
-        time.sleep(slowdown_factor*1.25)
+    def import_entries(self, entries: Iterable[TimeEntry], skip_logic: Callable[[str, str], bool],
+                       slowdown_factor: float = 1):
+        pyautogui.alert(
+            "Open timer and set the correct date. Press OK when ready to auto import time. Slam mouse into one of the corners of the screen at any point to cancel the sequence.")
+        time.sleep(slowdown_factor * 1.25)
         for entry in entries:
             if skip_logic(entry.client_and_project, entry.service_item):
                 print("Skipped: " + str(entry))
@@ -138,24 +158,24 @@ class DmcTimerImporter(_EntryImporter):
                     print("Skipped: " + str(entry) + ". Insufficient time.")
                     continue
             pyautogui.hotkey('ctrl', 'n')
-            time.sleep(slowdown_factor*1)
+            time.sleep(slowdown_factor * 1)
             pyautogui.hotkey('f2')
-            time.sleep(slowdown_factor*0.3)
+            time.sleep(slowdown_factor * 0.3)
             if entry.client_and_project:
                 pyautogui.typewrite(entry.client_and_project, pause=0.2)
-                time.sleep(slowdown_factor*0.5)
+                time.sleep(slowdown_factor * 0.5)
             pyautogui.hotkey('tab')
             if entry.service_item:
                 pyautogui.typewrite(entry.service_item)
-                time.sleep(slowdown_factor*0.1)
+                time.sleep(slowdown_factor * 0.1)
             pyautogui.hotkey('tab')
             if entry.task:
                 pyautogui.typewrite(entry.task)
-                time.sleep(slowdown_factor*0.25)
+                time.sleep(slowdown_factor * 0.25)
             pyautogui.hotkey('tab')
             if time_hrs_rounded:
                 pyautogui.typewrite(str(time_hrs_rounded))
-                time.sleep(slowdown_factor*0.1)
+                time.sleep(slowdown_factor * 0.1)
             pyautogui.hotkey('tab')
             pyautogui.hotkey('tab')
             pyautogui.hotkey('tab')
@@ -164,11 +184,11 @@ class DmcTimerImporter(_EntryImporter):
             if entry.description:
                 pyautogui.typewrite(entry.description)
             pyautogui.hotkey('enter')
-            time.sleep(slowdown_factor*1)
+            time.sleep(slowdown_factor * 1)
         pyautogui.alert("Time entry complete")
 
 
-class TextDumpExporter(_EntryImporter):
+class TextDumpImporter(_EntryImporter):
     def import_entries(self, entries: Iterable[TimeEntry], skip_logic: Callable[[str, str], bool],
                        slowdown_factor: float = 1):
         i = 1
@@ -190,7 +210,7 @@ class TextDumpExporter(_EntryImporter):
                 entry.description
             )
             print(entry_str)
-            i+=1
+            i += 1
 
 
 def pull_and_import_single_day(date,
