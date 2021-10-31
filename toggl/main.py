@@ -67,16 +67,19 @@ class _EntryParser:
 
 def _merge_entry(entries: Iterable[TimeEntry], new_entry: TimeEntry) -> Iterable[TimeEntry]:
     entries = list(entries)  # make a value copy of entries
-    found_matching = False
-    for existing_entry in entries:
-        if existing_entry.client_and_project == new_entry.client_and_project and \
-                existing_entry.service_item == new_entry.service_item and \
-                existing_entry.task == new_entry.task:
-            existing_entry.time_ms += new_entry.time_ms
-            existing_entry.description += " " + new_entry.description
-            found_matching = True
-            break
-    if not found_matching:
+    if new_entry.client_and_project:
+        found_matching = False
+        for existing_entry in entries:
+            if existing_entry.client_and_project == new_entry.client_and_project and \
+                    existing_entry.service_item == new_entry.service_item and \
+                    existing_entry.task == new_entry.task:
+                existing_entry.time_ms += new_entry.time_ms
+                existing_entry.description += " " + new_entry.description
+                found_matching = True
+                break
+        if not found_matching:
+            entries.append(new_entry)
+    else:
         entries.append(new_entry)
     return entries
 
