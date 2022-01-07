@@ -8,7 +8,7 @@ import posixpath
 import datetime
 import sys
 from version import version
-from App_DuplicateRepo import ToolUI
+from repo_parameters_ui import ToolUI
 
 print("---REPO DUPLICATOR v%s---" % version)
 
