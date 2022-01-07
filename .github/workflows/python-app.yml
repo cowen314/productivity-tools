@@ -30,7 +30,7 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Build application
       run: |
-        pyinstaller duplicate_repo/build_duplicate_repo.spec
+        pyinstaller duplicate_repo/build_scripts/build_duplicate_repo.spec
     - name: Build setup
       run: |
-        pyinstaller duplicate_repo/build_setup_script.spec
+        pyinstaller duplicate_repo/build_scripts/build_setup_script.spec
