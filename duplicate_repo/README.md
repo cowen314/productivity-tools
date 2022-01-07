@@ -6,8 +6,8 @@ The history of the template repository is preserved in the duplicate, so rebasin
 
 ## Building from scratch
 
-1. build the tool with pyinstaller `pyinstaller build_duplicate_repo.spec`
-1. build the setup with pyinstaller `pyinstaller build_setup_script.spec`
+1. build the tool with pyinstaller `pyinstaller build_scripts/build_duplicate_repo.spec`
+1. build the setup with pyinstaller `pyinstaller build_scripts/build_setup_script.spec`
     - this will build a very simple installer, `setup_script.exe`
 
 ## Installation
