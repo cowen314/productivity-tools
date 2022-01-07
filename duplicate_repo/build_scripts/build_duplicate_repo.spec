@@ -3,7 +3,7 @@
 block_cipher = None
 
 
-a = Analysis(['setup_script.py'],
+a = Analysis(['../source/duplicate_repo.py'],
              pathex=['.'],
              binaries=[],
              datas=[],
@@ -19,15 +19,19 @@ pyz = PYZ(a.pure, a.zipped_data,
              cipher=block_cipher)
 exe = EXE(pyz,
           a.scripts,
-          a.binaries,
-          a.zipfiles,
-          a.datas,
           [],
-          name='setup_script',
+          exclude_binaries=True,
+          name='duplicate_repo',
           debug=False,
           bootloader_ignore_signals=False,
           strip=False,
           upx=True,
-          upx_exclude=[],
-          runtime_tmpdir=None,
           console=True )
+coll = COLLECT(exe,
+               a.binaries,
+               a.zipfiles,
+               a.datas,
+               strip=False,
+               upx=True,
+               upx_exclude=[],
+               name='duplicate_repo')
