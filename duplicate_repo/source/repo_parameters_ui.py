@@ -5,24 +5,51 @@ from tkinter import filedialog
 
 
 class ToolUI():
-    def __init__(self, namespace, template_url, dest_base_url, target_path):
+    def __init__(self, namespace, template_url_http, template_url_ssh,  dest_base_url_http, dest_base_url_ssh, target_path, protocol):
         self.project_name = ""
         self.namespace = namespace
-        self.template_url = template_url
-        self.dest_base_url = dest_base_url
         self.target_path = target_path
+        self.protocol = protocol
+
+        self.template_url = ""
+        self.template_url_http = template_url_http
+        self.template_url_ssh = template_url_ssh
+
+        self.dest_base_url = ""
+        self.dest_base_url_http = dest_base_url_http
+        self.dest_base_url_ssh = dest_base_url_ssh
     
     def setValues(self):
         if self.entry_project_name.get() != "":
             self.project_name = self.entry_project_name.get()
         if self.entry_namespace.get() != "":
             self.namespace = self.entry_namespace.get()
-        if self.entry_template_url.get() != "":
-            self.template_url = self.entry_template_url.get()
-        if self.entry_dest_base_url.get() != "":
-            self.dest_base_url = self.entry_dest_base_url.get()
         if self.entry_target_path.get() != "":
             self.target_path = self.entry_target_path.get()
+        
+        self.protocol = self.protocol_var.get()
+        print("PROTOCOL SELECTED: ",self.protocol)
+        
+        
+        if self.entry_template_url.get() != "":
+            self.template_url = self.entry_template_url.get()
+        # need to use the detault, will depend on whether user selects http or ssh as protocol       
+        else: 
+            if self.protocol == "http":
+                self.template_url = self.template_url_http
+            else:
+                self.template_url = self.template_url_ssh
+        
+        if self.entry_dest_base_url.get() != "":
+            self.dest_base_url = self.entry_dest_base_url.get()
+         # need to use the detault, will depend on whether user selects http or ssh as protocol       
+        else: 
+            if self.protocol == "http":
+                self.dest_base_url = self.dest_base_url_http
+            else:
+                self.dest_base_url = self.dest_base_url_ssh
+
+
         #self.duplicate_text.set("Start Running...")
         self.root.destroy()
 
@@ -36,8 +63,8 @@ class ToolUI():
         self.root = tk.Tk()
         self.root.title("DMC Duplicate Repo Tool")
 
-        canvas = tk.Canvas(self.root, width=1400, height=300)
-        canvas.grid(columnspan=3, rowspan=6)
+        canvas = tk.Canvas(self.root, width=1400, height=400) ## MART 300 -> 400
+        canvas.grid(columnspan=3, rowspan=7) ## MART 6->7
 
         label_project_name = tk.Label(self.root, text="Enter the name of your repo / project (*MUST PROVIDE*):")
         label_project_name.grid(column=0, row=0, sticky=W)
@@ -64,15 +91,25 @@ class ToolUI():
         self.entry_target_path = tk.Entry(self.root, width=60)
         self.entry_target_path.grid(column=2, row=4)
 
+        ## MART added
+        label_protocol = tk.Label(self.root, text="Select which protocol to use:")
+        label_protocol.grid(column=0, row=5, sticky=W)
+        self.protocol_var = tk.StringVar(self.root)
+        OPTIONS = ["http","ssh"]
+        self.protocol_var.set(OPTIONS[0]) # default
+        self.entry_protocol = tk.OptionMenu(self.root, self.protocol_var, *OPTIONS) 
+        self.entry_protocol.grid(column=2, row=5)
+        ##
+
         self.selectDirectory_text = tk.StringVar()
         selectDirectory_btn = tk.Button(self.root, textvariable = self.selectDirectory_text, command=self.selectDirectory, height=1, width=6)
         self.selectDirectory_text.set("Select")
-        selectDirectory_btn.grid(column=1, row=4)
+        selectDirectory_btn.grid(column=1, row=4) ## MART 4->6
             
         self.duplicate_text = tk.StringVar()
         duplicate_btn = tk.Button(self.root, textvariable = self.duplicate_text, command=self.setValues, height=2, width=20)
         self.duplicate_text.set("Duplicate")
-        duplicate_btn.grid(column=2, row=5)
+        duplicate_btn.grid(column=2, row=6) ## MART 5->6
         
         #Run the main loop
         self.root.mainloop()
@@ -85,5 +122,6 @@ class ToolUI():
         # print("Target Path: %s" % toolUI.target_path)
 
 if __name__ == "__main__":
-    toolUI = ToolUI("DMC/labview/", "https://git.dmcinfo.com/DMC/labview/dmc-templates/labview-template-project.git", "https://git.dmcinfo.com/", ".")
+    # toolUI = ToolUI("DMC/labview/", "https://git.dmcinfo.com/DMC/labview/dmc-templates/labview-template-project.git", "https://git.dmcinfo.com/", ".") # MART
+    toolUI = ToolUI("DMC/labview/", "git@git.dmcinfo.com:DMC/labview/dmc-templates/gitlab-template.git", "https://git.dmcinfo.com/", ".")
     toolUI.launchUI()
