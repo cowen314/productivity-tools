@@ -159,8 +159,20 @@ class DmcTimerImporter(_EntryImporter):
             time_hrs_rounded = None
             if entry.time_ms:
                 time_hrs = entry.time_ms / 1000.0 / 60 / 60
-                # convert to hours, round to the nearest 15 minute increment
-                time_hrs_rounded = (float(int((time_hrs + 0.125) * 4))) / 4
+                # time_hrs_rounded = (float(int((time_hrs + 0.125) * 4))) / 4  # convert to hours, round to the nearest 15 minute increment
+                
+                # **rounding logic**
+                # Anything from 0-15 minutes is billed at 15 minutes
+                # 3-minute buffer: 33 minutes gets rounded down to 30, 34 minutes is rounded up to 45 minutes.
+                if time_hrs < 0.25:
+                    time_hrs_rounded = 0.25
+                else:
+                    nearest_quarter_floor = float(int((time_hrs) * 4)) / 4
+                    minutes_over_nearest_floor = (time_hrs - nearest_quarter_floor) * 60
+                    time_hrs_rounded = nearest_quarter_floor
+                    if minutes_over_nearest_floor > 3:
+                        time_hrs_rounded += 0.25
+
                 if time_hrs_rounded <= 0:
                     print("Skipped: " + str(entry) + ". Insufficient time.")
                     continue
@@ -203,8 +215,17 @@ class TextDumpImporter(_EntryImporter):
             time_hrs_rounded = 0
             if entry.time_ms:
                 time_hrs = entry.time_ms / 1000.0 / 60 / 60
-                # convert to hours, round to the nearest 15 minute increment
-                time_hrs_rounded = (float(int((time_hrs + 0.125) * 4))) / 4
+                # **rounding logic**
+                # Anything from 0-15 minutes is billed at 15 minutes
+                # 3-minute buffer: 33 minutes gets rounded down to 30, 34 minutes is rounded up to 45 minutes.
+                if time_hrs < 0.25:
+                    time_hrs_rounded = 0.25
+                else:
+                    nearest_quarter_floor = float(int((time_hrs) * 4)) / 4
+                    minutes_over_nearest_floor = (time_hrs - nearest_quarter_floor) * 60
+                    time_hrs_rounded = nearest_quarter_floor
+                    if minutes_over_nearest_floor > 3:
+                        time_hrs_rounded += 0.25
                 if time_hrs_rounded <= 0:
                     # print("Skipped: " + str(entry) + ". Insufficient time.")
                     continue
