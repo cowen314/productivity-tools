@@ -31,7 +31,7 @@ PyScreeze==0.1.26
 PyTweening==1.0.3
 queuelib==1.5.0
 requests==2.22.0
-Scrapy==1.8.0
+Scrapy==2.6.2
 service-identity==18.1.0
 six==1.14.0
 Twisted==19.10.0
