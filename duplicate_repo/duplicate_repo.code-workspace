@@ -1,0 +1,36 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "ms-python.python",
+        "python.formatting.provider": "autopep8",
+		"python.analysis.typeCheckingMode": "basic",
+        "python.linting.pycodestyleEnabled": true,
+        "python.linting.pycodestyleCategorySeverity.E": "Warning",
+        "python.linting.pycodestyleCategorySeverity.W": "Information",
+	},
+    "extensions": {
+        "recommendations": [
+            "ms-python.python",
+            "ms-python.vscode-pylance"
+        ]
+    },
+	"launch": {
+		"configurations": [
+			{
+				"name": "Duplicate with wizard",
+				"type": "python",
+				"request": "launch",
+				"program": "source/duplicate_repo.py",
+				"args": ["--wizard"],
+				"console": "integratedTerminal",
+				"justMyCode": true
+			}
+		],
+		"compounds": []
+	}
+}

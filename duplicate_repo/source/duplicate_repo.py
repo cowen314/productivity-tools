@@ -9,6 +9,7 @@ import datetime
 import sys
 from version import version
 from repo_parameters_ui import ToolUI
+from urllib.parse import urlparse
 
 print("---REPO DUPLICATOR v%s---" % version)
 
@@ -48,6 +49,11 @@ def call_cli(command: str, running_as_wizard: bool, cwd: Path, pre_msg: str = No
     elif len(po.stdout) > 0:
         print(po.stdout.decode('ascii'))
     print("---")
+
+
+def clean_url_string(url: str) -> str:
+    url = url.strip('"').strip("'")  # strip off quotes
+    return url
 
 
 # read in config file, create a new one if none exists
@@ -116,19 +122,19 @@ if args.wizard:
     # if tp.strip() != "":
     #     args.target_path = tp
 
-target_path = Path(args.target_path) / TEMP_DIR_NAME
+temporary_dir = Path(args.target_path) / TEMP_DIR_NAME
 args.project_name = args.project_name.replace(" ", "-")  # clean the project name
 
 # check paths
-if target_path.exists() and len(list(target_path.glob("*"))) != 0:
+if temporary_dir.exists() and len(list(temporary_dir.glob("*"))) != 0:
     exit_with_error(" > ERROR: Files were found in the target directory. This tool will only work on a blank directory.", args.wizard)
-target_path.mkdir(parents=True, exist_ok=True)
+temporary_dir.mkdir(parents=True, exist_ok=True)
 
 # clone some template repo into current repo (use subprocess), do it into a temp dir
-call_cli("git clone %s" % args.template_url, args.wizard, target_path.resolve(), pre_msg="Cloning template from %s" % args.template_url)
+call_cli(f"git clone {clean_url_string(args.template_url)}", args.wizard, temporary_dir.resolve(), pre_msg=f"Cloning template from {clean_url_string(args.template_url)}")
 
 # grab repo dir
-repo_dir = list(target_path.glob("*"))[0]  # there should only be one folder at the target path after the clone
+repo_dir = list(temporary_dir.glob("*"))[0]  # there should only be one folder at the target path after the clone
 
 # pull lfs content
 call_cli("git lfs pull", args.wizard, repo_dir.resolve(), pre_msg="Pulling LFS content")
@@ -141,12 +147,12 @@ call_cli("git remote remove origin", args.wizard, repo_dir.resolve(), pre_msg="R
 
 # hit the command to add a new repo to the remote
 # (https://docs.gitlab.com/ee/gitlab-basics/create-project.html#push-to-create-a-new-project)
-namespace_url = urllib.parse.urljoin(args.dest_base_url, args.namespace)
-new_project_url = urllib.parse.urljoin(args.dest_base_url, posixpath.join(args.namespace, args.project_name+".git"))
+namespace_url = urllib.parse.urljoin(clean_url_string(args.dest_base_url), args.namespace)
+new_project_url = urllib.parse.urljoin(clean_url_string(args.dest_base_url), posixpath.join(args.namespace, args.project_name+".git"))
 
 call_cli("git push --set-upstream %s master" % new_project_url, args.wizard, repo_dir.resolve(),
-         pre_msg="Pushing to new project at %s" % new_project_url,
-         custom_err_msg="Failed to create new repository (does it already exist? do you have proper permissions to "
+        pre_msg="Pushing to new project at %s" % new_project_url,
+        custom_err_msg="Failed to create new repository (does it already exist? do you have proper permissions to "
                         "push to this group?")
 
 # add ref to origin
@@ -157,11 +163,11 @@ call_cli("git remote add origin %s" % new_project_url, args.wizard, repo_dir.res
 init_file = repo_dir / "README.md"
 init_file.touch()
 with open(init_file, "a") as fh:
-    fh.write("\n\n---\n\nThis project was created %s by copying %s." % (str(datetime.datetime.now()), args.template_url))
+    fh.write("\n\n---\n\nThis project was created %s by copying %s." % (str(datetime.datetime.now()), clean_url_string(args.template_url)))
 # call_cli("git commit -am 'REPO CREATOR (v%s): INIT'" % version, args.wizard, repo_dir.resolve(),
 #          pre_msg="Adding initial commit")
 po = subprocess.run(
-    ["git", "commit", "-am", "REPO CREATOR (v%s): INIT" % version],
+    ["git", "commit", "-am", f"REPO CREATOR (v{version}): INIT"],
     capture_output=True,
     cwd=repo_dir.resolve())
 if po.returncode > 0:
@@ -174,13 +180,12 @@ call_cli("git push", args.wizard, repo_dir.resolve(), pre_msg="Pushing")
 
 print(" > Moving out of temporary directory")
 repo_dir.rename(repo_dir.parent.parent / args.project_name)  # move up a directory, into appropriately named folder
-(repo_dir.parent.parent / TEMP_DIR_NAME).rmdir()
 
-new_project_url = urllib.parse.urljoin(args.dest_base_url, posixpath.join(args.namespace, args.project_name))
-project_settings_url = urllib.parse.urljoin(args.dest_base_url, posixpath.join(args.namespace, args.project_name, "edit"))
+new_project_url = urllib.parse.urljoin(clean_url_string(args.dest_base_url), posixpath.join(args.namespace, args.project_name))
+project_settings_url = urllib.parse.urljoin(clean_url_string(args.dest_base_url), posixpath.join(args.namespace, args.project_name, "edit"))
 print(" > SUCCESS: Repository created successfully!"
       "\n > URL of new project is %s."
       "\n > Project visibility is currently set to private, navigate to %s to update it."
-      "\n > All code sourced from %s" % (new_project_url, project_settings_url, args.template_url))
+      "\n > All code sourced from %s" % (new_project_url, project_settings_url, clean_url_string(args.template_url)))
 if args.wizard:
     input(" > Press enter to exit")

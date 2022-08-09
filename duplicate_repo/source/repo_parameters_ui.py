@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter.constants import W
 import time
 from tkinter import filedialog
-
+from version import version
 
 class ToolUI():
     def __init__(self, namespace, template_url, dest_base_url, target_path):
@@ -34,7 +34,7 @@ class ToolUI():
     def launchUI(self):
         #Main window
         self.root = tk.Tk()
-        self.root.title("DMC Duplicate Repo Tool")
+        self.root.title(f"DMC Duplicate Repo Tool (v{version})")
 
         canvas = tk.Canvas(self.root, width=1400, height=300)
         canvas.grid(columnspan=3, rowspan=6)
