@@ -10,20 +10,26 @@ import sys
 from version import version
 from repo_parameters_ui import ToolUI
 
+
+
+
+
 print("---REPO DUPLICATOR v%s---" % version)
 
 TEMP_DIR_NAME = ".repo-duplicator"
 CONFIG_FILENAME = "cloneconfig.json"  # FIXME this currently goes into the clone parent dir, not the
 DEFAULT_CONFIG = {
     "default_namespace": "DMC/labview/",
-    "default_template_url": "https://git.dmcinfo.com/DMC/labview/dmc-templates/labview-template-project.git",
-    "default_dest_base_url": "https://git.dmcinfo.com/"
+    "default_dest_base_url_http": "https://git.dmcinfo.com/",
+    "default_template_url_http": "https://git.dmcinfo.com/DMC/labview/dmc-templates/labview-template-project.git",
+    "default_dest_base_url_ssh": "git@git.dmcinfo.com:/",
+    "default_template_url_ssh": "git@git.dmcinfo.com:DMC/labview/dmc-templates/gitlab-template.git",
+    "default_protocol": "http" 
 }
 if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):  # if in the context of a PyInstaller bundled application
     EXE_DIR = Path(sys._MEIPASS)
 else:
     EXE_DIR = Path(__file__).parent
-
 
 def exit_with_error(msg: str, running_as_wizard: bool):
     if not running_as_wizard:
@@ -41,6 +47,7 @@ def call_cli(command: str, running_as_wizard: bool, cwd: Path, pre_msg: str = No
         capture_output=True,
         cwd=cwd)
     if po.returncode > 0:
+        print(po.stderr.decode('ascii'))
         if custom_err_msg:
             exit_with_error(" > ERROR: %s\n > %s" % (po.stderr.decode('ascii'), custom_err_msg), running_as_wizard)
         else:
@@ -68,20 +75,46 @@ except Exception as e:
 parser = argparse.ArgumentParser()
 parser.add_argument('--project-name', help="Name of the new Gitlab project. Required when creating a new project/repo.", dest="project_name")
 parser.add_argument('--namespace', help="Namespace of the project on Gitlab (default: %s)" % config["default_namespace"], default=config["default_namespace"])
-parser.add_argument('--template-url', help="Template repository to copy to the newly created repo (default: %s)" % config["default_template_url"], default=config["default_template_url"], dest="template_url")
+parser.add_argument('--template-url', help="Template repository to copy to the newly created repo (default: %s)" % config["default_template_url_http"])
 parser.add_argument('--target-path', help="Local path to copy files into", default=".", dest="target_path")
-parser.add_argument('--dest-base-url', help="URL base for the new Gitlab repo / project. This URL should not contain the namespace or project. (default: %s)" % config["default_dest_base_url"], default=config["default_dest_base_url"], dest="dest_base_url")
+parser.add_argument('--dest-base-url', help="URL base for the new Gitlab repo / project. This URL should not contain the namespace or project. (default: %s)" % config["default_dest_base_url_http"], dest="dest_base_url")
+parser.add_argument('--protocol', help="Select a protocol: \"https\" or \"ssh\"", dest="protocol", default=config["default_protocol"]) 
 parser.add_argument("--wizard", help="Run this tool with a wizard to walk through setting parameters.", action="store_true")
+
 
 # parse args
 args = parser.parse_args()
+print(args)
+
+# set to a default if invalid
+args.protocol = args.protocol.lower
+if (args.protocol != "ssh" and args.protocol != "http") :
+    print("Protocol invalid, using http")
+    args.protocol = "http"
+
+# set if templat url and dest base path left empty, set defaults based on protocol
+if args.template_url == None:
+    if args.protocol == "http":
+        args.template_url = config["default_template_url_http"]
+    else:
+        args.template_url = config["default_template_url_ssh"]
+if args.dest_base_url == None:
+    if args.protocol == "http":
+        args.dest_base_url = config["default_dest_base_url_http"]
+    else:
+        args.dest_base_url = config["default_dest_base_url_ssh"]
+    
+
+
+print(args)
+
 if not args.project_name:
     args.wizard = True  # set the wizard true if no project name
     # exit_with_error("Must supply either a project name, or set the --wizard flag to true", args.wizard)
 
 # if the wizard flag was set, run the user through the wizard
 if args.wizard:
-    toolUI = ToolUI(args.namespace, args.template_url, args.dest_base_url, args.target_path)
+    toolUI = ToolUI(args.namespace, config["default_template_url_http"], config["default_template_url_ssh"], config["default_dest_base_url_http"], config["default_dest_base_url_ssh"], args.target_path, args.protocol)
     toolUI.launchUI()
     if toolUI.project_name == "":
         exit_with_error(" > Invalid project name", args.wizard)
@@ -90,6 +123,7 @@ if args.wizard:
     args.template_url = toolUI.template_url
     args.dest_base_url = toolUI.dest_base_url
     args.target_path = toolUI.target_path
+    args.protocol = toolUI.protocol
 
     print("---Parameter Setting Completed---")
     print("Project Name: %s" % toolUI.project_name)
@@ -97,6 +131,7 @@ if args.wizard:
     print("Template URL: %s" % toolUI.template_url)
     print("Dest Base URL: %s" % toolUI.dest_base_url)
     print("Target Path: %s" % toolUI.target_path)
+    print("Protocol: %s" % toolUI.protocol)
 
     # args.project_name = input(" > Enter the name of your repo / project: ")  # TODO add check for invalid chars
     # if args.project_name.strip() == "":
@@ -119,13 +154,20 @@ if args.wizard:
 target_path = Path(args.target_path) / TEMP_DIR_NAME
 args.project_name = args.project_name.replace(" ", "-")  # clean the project name
 
+
 # check paths
 if target_path.exists() and len(list(target_path.glob("*"))) != 0:
     exit_with_error(" > ERROR: Files were found in the target directory. This tool will only work on a blank directory.", args.wizard)
 target_path.mkdir(parents=True, exist_ok=True)
 
+
 # clone some template repo into current repo (use subprocess), do it into a temp dir
+print("resolved: ", target_path.resolve())
+print("Template URL: ", args.template_url)
 call_cli("git clone %s" % args.template_url, args.wizard, target_path.resolve(), pre_msg="Cloning template from %s" % args.template_url)
+#os.system("git clone %s %s" % args.template_url, target_path.resolve()) # Cloning
+
+
 
 # grab repo dir
 repo_dir = list(target_path.glob("*"))[0]  # there should only be one folder at the target path after the clone
@@ -184,3 +226,4 @@ print(" > SUCCESS: Repository created successfully!"
       "\n > All code sourced from %s" % (new_project_url, project_settings_url, args.template_url))
 if args.wizard:
     input(" > Press enter to exit")
+
