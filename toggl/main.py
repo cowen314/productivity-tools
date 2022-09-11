@@ -162,9 +162,9 @@ class DmcTimerImporter(_EntryImporter):
                 # time_hrs_rounded = (float(int((time_hrs + 0.125) * 4))) / 4  # convert to hours, round to the nearest 15 minute increment
                 
                 # **rounding logic**
-                # Anything from 0-15 minutes is billed at 15 minutes
+                # Anything from 0-15 minutes is billed at 15 minutes (I add a 1 minute buffer to remove tiny entries)
                 # 3-minute buffer: 33 minutes gets rounded down to 30, 34 minutes is rounded up to 45 minutes.
-                if time_hrs < 0.25:
+                if time_hrs < 0.25 and time_hrs * 60 > 1:
                     time_hrs_rounded = 0.25
                 else:
                     nearest_quarter_floor = float(int((time_hrs) * 4)) / 4
@@ -216,9 +216,9 @@ class TextDumpImporter(_EntryImporter):
             if entry.time_ms:
                 time_hrs = entry.time_ms / 1000.0 / 60 / 60
                 # **rounding logic**
-                # Anything from 0-15 minutes is billed at 15 minutes
+                # Anything from 0-15 minutes is billed at 15 minutes (I add a 1 minute buffer to remove tiny entries)
                 # 3-minute buffer: 33 minutes gets rounded down to 30, 34 minutes is rounded up to 45 minutes.
-                if time_hrs < 0.25:
+                if time_hrs < 0.25 and time_hrs * 60 > 1:
                     time_hrs_rounded = 0.25
                 else:
                     nearest_quarter_floor = float(int((time_hrs) * 4)) / 4
