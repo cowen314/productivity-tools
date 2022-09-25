@@ -229,7 +229,7 @@ class TextDumpImporter(_EntryImporter):
                 if time_hrs_rounded <= 0:
                     # print("Skipped: " + str(entry) + ". Insufficient time.")
                     continue
-            entry_str = "%s -- %s\t%s\t%s\t%.2f\n%s" % (
+            entry_str = "%s -- %s\t%s\t%s\t%.2f\n\t%s" % (
                 i,
                 entry.client_and_project,
                 entry.service_item,
