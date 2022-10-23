@@ -177,18 +177,21 @@ class DmcTimerImporter(_EntryImporter):
                     print("Skipped: " + str(entry) + ". Insufficient time.")
                     continue
             pyautogui.hotkey('ctrl', 'n')
-            time.sleep(slowdown_factor * 1)
+            time.sleep(slowdown_factor * 2)
             pyautogui.hotkey('f2')
-            time.sleep(slowdown_factor * 0.3)
+            time.sleep(slowdown_factor * 1)
             if entry.client_and_project:
-                pyautogui.typewrite(entry.client_and_project, pause=0.2)
-                time.sleep(slowdown_factor * 0.5)
+                pyautogui.typewrite(entry.client_and_project[0])
+                # pyautogui.alert("Press OK when dropdown shows up")
+                time.sleep(slowdown_factor * 2)
+                pyautogui.typewrite(entry.client_and_project[1:])
+                time.sleep(slowdown_factor * 0.6)
             pyautogui.hotkey('tab')
-            if entry.service_item:
+            if entry.service_item and len(entry.service_item) > 0:
                 pyautogui.typewrite(entry.service_item)
                 time.sleep(slowdown_factor * 0.1)
             pyautogui.hotkey('tab')
-            if entry.task:
+            if entry.task and len(entry.task) > 0:
                 pyautogui.typewrite(entry.task)
                 time.sleep(slowdown_factor * 0.25)
             pyautogui.hotkey('tab')
@@ -202,8 +205,9 @@ class DmcTimerImporter(_EntryImporter):
             pyautogui.hotkey('tab')
             if entry.description:
                 pyautogui.typewrite(entry.description)
+                time.sleep(slowdown_factor * 2)
             pyautogui.hotkey('enter')
-            time.sleep(slowdown_factor * 1)
+            time.sleep(slowdown_factor * 3)
         pyautogui.alert("Time entry complete")
 
 
