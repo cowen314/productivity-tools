@@ -136,3 +136,5 @@ dmypy.json
 /.idea/
 /private_data.py
 
+# secrets
+toggl_secrets.json
