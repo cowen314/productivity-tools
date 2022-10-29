@@ -1,3 +1,4 @@
+from datetime import date
 import requests, json, pyautogui, time
 from typing import List, Dict, Iterable, Callable
 from abc import abstractmethod
@@ -28,6 +29,19 @@ class Toggl:
                 self.workspace_id,
                 date,
                 date
+            ),
+            auth=(self.api_key, self._PASSWORD)
+        )
+        return json.loads(response.text)
+
+    def get_entries_multiple_days(self, since_date: str, until_date: str) -> Dict:
+        response = requests.get(
+            "%s?user_agent=%s&workspace_id=%s&since=%s&until=%s" % (
+                self._BASE_SUMMARY_URL,
+                self.user_agent,
+                self.workspace_id,
+                since_date,
+                until_date
             ),
             auth=(self.api_key, self._PASSWORD)
         )
@@ -276,6 +290,45 @@ def pull_and_import_single_day(date,
     time.sleep(1)  # max 1 request per second to toggl's API
     my_toggl.workspace_id = workspaces[0]["id"]
     data = my_toggl.get_entries_1_day(date)
+    print(data)
+
+    # parse it to nicely formatted structure
+    e = ExampleParser(toggl_project_to_client_name_map, toggl_project_name_map)
+    parsed_data = e.parse_summary_entry_data(data)
+    for day in parsed_data:
+        print(day)
+    print("---")
+    # import it
+    importer.import_entries(parsed_data, skip_logic, slowdown_factor=slowdown_factor)
+
+
+def generate_invoice_model(since_date: str,
+                            until_date: str,
+                               api_key,
+                               toggl_project_to_client_name_map: Dict[str, str] = {},
+                               toggl_project_name_map: Dict[str, str] = {},
+                               skip_logic: Callable[[str, str], bool]):
+    """
+    @param date: a string in the format 'YYYY-MM-DD'
+    @param api_key: a Toggl API key
+    @param toggl_project_to_client_name_map: map of toggl project names to official client names, in case they are different
+    @param toggl_project_name_map: map of toggl project name to official project name
+    @param skip_logic: a function that takes parameters (client_and_project: str, service_item: str) and returns
+        True if the any item meeting those conditions should be skipped and False otherwise
+
+    General strategy:
+    - use toggl API to pull report data
+        - a summary report that's grouped by project and subgrouped by time_entries should work (see https://github.com/toggl/toggl_api_docs/blob/master/reports/summary.md)
+    - use importer to generate a model for invoices
+
+    """
+    # grab raw data from the Toggl
+    my_toggl = Toggl(api_key)
+    workspaces = my_toggl.get_available_workspaces()
+    print(workspaces)
+    time.sleep(1)  # max 1 request per second to toggl's API
+    my_toggl.workspace_id = workspaces[0]["id"]
+    data = my_toggl.get_entries_multiple_days(since_date, until_date)
     print(data)
 
     # parse it to nicely formatted structure
