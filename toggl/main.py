@@ -10,13 +10,17 @@ class Toggl:
     _WORKSPACES_URL = "https://api.track.toggl.com/api/v8/workspaces"
     _PASSWORD = "api_token"
 
-    def __init__(self, api_key: str, workspace_id: int = None, user_agent: str = "api_test"):
+    def __init__(self,
+                 api_key: str,
+                 workspace_id: int = None,
+                 user_agent: str = "api_test"):
         self.api_key = api_key
         self.workspace_id = workspace_id
         self.user_agent = user_agent
 
     def get_available_workspaces(self) -> List[Dict]:
-        response_text = requests.get(self._WORKSPACES_URL, auth=(self.api_key, self._PASSWORD)).text
+        response_text = requests.get(self._WORKSPACES_URL,
+                                     auth=(self.api_key, self._PASSWORD)).text
         return json.loads(response_text)
 
     def get_entries_1_day(self, date: str) -> Dict:
@@ -24,34 +28,31 @@ class Toggl:
         @param date: a string in the format 'YYYY-MM-DD'
         """
         response = requests.get(
-            "%s?user_agent=%s&workspace_id=%s&since=%s&until=%s" % (
-                self._BASE_SUMMARY_URL,
-                self.user_agent,
-                self.workspace_id,
-                date,
-                date
-            ),
-            auth=(self.api_key, self._PASSWORD)
-        )
+            "%s?user_agent=%s&workspace_id=%s&since=%s&until=%s" %
+            (self._BASE_SUMMARY_URL, self.user_agent, self.workspace_id, date,
+             date),
+            auth=(self.api_key, self._PASSWORD))
         return json.loads(response.text)
 
-    def get_entries_multiple_days(self, since_date: str, until_date: str) -> Dict:
+    def get_entries_multiple_days(self, since_date: str,
+                                  until_date: str) -> Dict:
         response = requests.get(
-            "%s?user_agent=%s&workspace_id=%s&since=%s&until=%s" % (
-                self._BASE_SUMMARY_URL,
-                self.user_agent,
-                self.workspace_id,
-                since_date,
-                until_date
-            ),
-            auth=(self.api_key, self._PASSWORD)
-        )
+            "%s?user_agent=%s&workspace_id=%s&since=%s&until=%s" %
+            (self._BASE_SUMMARY_URL, self.user_agent, self.workspace_id,
+             since_date, until_date),
+            auth=(self.api_key, self._PASSWORD))
         return json.loads(response.text)
 
 
 class TimeEntry:
-    def __init__(self, client_and_project: str = None, service_item: str = None, task: str = None, time_ms: int = None,
-                 description: str = None, date: date = None):
+
+    def __init__(self,
+                 client_and_project: str = None,
+                 service_item: str = None,
+                 task: str = None,
+                 time_ms: int = None,
+                 description: str = None,
+                 date: date = None):
         """
         @param client_and_project: the client and project in the form <client>:<project>
         """
@@ -64,24 +65,23 @@ class TimeEntry:
 
     def __str__(self):
         return "c&p: %s; service_item: %s; task: %s; time_hr: %.2f; desc: %s" % (
-            self.client_and_project,
-            self.service_item,
-            self.task,
-            self.time_ms / 60000 / 60,
-            self.description
-        )
+            self.client_and_project, self.service_item, self.task,
+            self.time_ms / 60000 / 60, self.description)
 
 
 class _EntryParser:
+
     @abstractmethod
-    def parse_summary_entry_data(self, daily_data: Dict) -> Iterable[TimeEntry]:
+    def parse_summary_entry_data(self,
+                                 daily_data: Dict) -> Iterable[TimeEntry]:
         """
         @param daily_data: data for a single day
         """
         raise NotImplementedError
 
 
-def _merge_entry(entries: Iterable[TimeEntry], new_entry: TimeEntry) -> Iterable[TimeEntry]:
+def _merge_entry(entries: Iterable[TimeEntry],
+                 new_entry: TimeEntry) -> Iterable[TimeEntry]:
     entries = list(entries)  # make a value copy of entries
     # if new_entry.client_and_project:
     found_matching = False
@@ -105,19 +105,23 @@ def _merge_entry(entries: Iterable[TimeEntry], new_entry: TimeEntry) -> Iterable
 
 
 class ExampleParser(_EntryParser):
+
     def __init__(self,
                  toggl_project_to_client_name_map: Dict[str, str] = {},
                  toggl_project_name_map: Dict[str, str] = {}):
         self._toggl_project_to_client_name_map = toggl_project_to_client_name_map
         self._toggl_project_name_map = toggl_project_name_map
 
-    def parse_summary_entry_data(self, daily_data: Dict) -> Iterable[TimeEntry]:
+    def parse_summary_entry_data(self,
+                                 daily_data: Dict) -> Iterable[TimeEntry]:
         time_entries = []
         for project in daily_data['data']:
-            # get client name 
-            client_name = project['title']['project']  # I store client in toggl project name field
+            # get client name
+            client_name = project['title'][
+                'project']  # I store client in toggl project name field
             if client_name and client_name in self._toggl_project_to_client_name_map:  # sometimes, the client name in toggl is slightly different than the actual client name
-                client_name = self._toggl_project_to_client_name_map[client_name]
+                client_name = self._toggl_project_to_client_name_map[
+                    client_name]
 
             # loop through entries for that client
             # for now, I'll just add a new entry for each entry in toggl
@@ -130,9 +134,11 @@ class ExampleParser(_EntryParser):
                     if client_name:
                         project_name = toggl_entry_info[0]
                         if project_name in self._toggl_project_name_map:
-                            project_name = self._toggl_project_name_map[project_name]
+                            project_name = self._toggl_project_name_map[
+                                project_name]
                         if client_name != "":
-                            entry.client_and_project = "%s:%s" % (client_name, project_name)
+                            entry.client_and_project = "%s:%s" % (client_name,
+                                                                  project_name)
                         else:
                             entry.client_and_project = "%s" % project_name
                     else:
@@ -156,17 +162,24 @@ class ExampleParser(_EntryParser):
 
 
 class _EntryImporter:
+
     @abstractmethod
-    def import_entries(self, entries: Iterable[TimeEntry], skip_logic: Callable[[str, str], bool],
+    def import_entries(self,
+                       entries: Iterable[TimeEntry],
+                       skip_logic: Callable[[str, str], bool],
                        slowdown_factor: float = 1):
         raise NotImplementedError
 
 
 class DmcTimerImporter(_EntryImporter):
-    def import_entries(self, entries: Iterable[TimeEntry], skip_logic: Callable[[str, str], bool],
+
+    def import_entries(self,
+                       entries: Iterable[TimeEntry],
+                       skip_logic: Callable[[str, str], bool],
                        slowdown_factor: float = 1):
         pyautogui.alert(
-            "Open timer and set the correct date. Press OK when ready to auto import time. Slam mouse into one of the corners of the screen at any point to cancel the sequence.")
+            "Open timer and set the correct date. Press OK when ready to auto import time. Slam mouse into one of the corners of the screen at any point to cancel the sequence."
+        )
         time.sleep(slowdown_factor * 1.25)
         for entry in entries:
             if skip_logic(entry.client_and_project, entry.service_item):
@@ -176,7 +189,7 @@ class DmcTimerImporter(_EntryImporter):
             if entry.time_ms:
                 time_hrs = entry.time_ms / 1000.0 / 60 / 60
                 # time_hrs_rounded = (float(int((time_hrs + 0.125) * 4))) / 4  # convert to hours, round to the nearest 15 minute increment
-                
+
                 # **rounding logic**
                 # Anything from 0-15 minutes is billed at 15 minutes (I add a 1 minute buffer to remove tiny entries)
                 # 3-minute buffer: 33 minutes gets rounded down to 30, 34 minutes is rounded up to 45 minutes.
@@ -184,7 +197,8 @@ class DmcTimerImporter(_EntryImporter):
                     time_hrs_rounded = 0.25
                 else:
                     nearest_quarter_floor = float(int((time_hrs) * 4)) / 4
-                    minutes_over_nearest_floor = (time_hrs - nearest_quarter_floor) * 60
+                    minutes_over_nearest_floor = (time_hrs -
+                                                  nearest_quarter_floor) * 60
                     time_hrs_rounded = nearest_quarter_floor
                     if minutes_over_nearest_floor > 3:
                         time_hrs_rounded += 0.25
@@ -228,7 +242,10 @@ class DmcTimerImporter(_EntryImporter):
 
 
 class TextDumpImporter(_EntryImporter):
-    def import_entries(self, entries: Iterable[TimeEntry], skip_logic: Callable[[str, str], bool],
+
+    def import_entries(self,
+                       entries: Iterable[TimeEntry],
+                       skip_logic: Callable[[str, str], bool],
                        slowdown_factor: float = 1):
         i = 1
         for entry in entries:
@@ -242,7 +259,8 @@ class TextDumpImporter(_EntryImporter):
                     time_hrs_rounded = 0.25
                 else:
                     nearest_quarter_floor = float(int((time_hrs) * 4)) / 4
-                    minutes_over_nearest_floor = (time_hrs - nearest_quarter_floor) * 60
+                    minutes_over_nearest_floor = (time_hrs -
+                                                  nearest_quarter_floor) * 60
                     time_hrs_rounded = nearest_quarter_floor
                     if minutes_over_nearest_floor > 3:
                         time_hrs_rounded += 0.25
@@ -250,18 +268,14 @@ class TextDumpImporter(_EntryImporter):
                     # print("Skipped: " + str(entry) + ". Insufficient time.")
                     continue
             entry_str = "%s -- %s\t%s\t%s\t%.2f\n\t%s" % (
-                i,
-                entry.client_and_project,
-                entry.service_item,
-                entry.task,
-                time_hrs_rounded,
-                entry.description
-            )
+                i, entry.client_and_project, entry.service_item, entry.task,
+                time_hrs_rounded, entry.description)
             print(entry_str)
             i += 1
 
 
 # classes to support invoicing... these should stay in sync with the classes in the invoicing repo
+
 
 class TimeItem(BaseModel):
     description: str
@@ -281,8 +295,10 @@ class InvoiceModel(BaseModel):
     # material_items: List[MaterialItem]  # can add this later
 
 
-def dump_entries_to_invoice_model(self, entries: Iterable[TimeEntry], skip_logic: Callable[[str, str], bool],
-                    slowdown_factor: float = 1):
+def dump_entries_to_invoice_model(self,
+                                  entries: Iterable[TimeEntry],
+                                  skip_logic: Callable[[str, str], bool],
+                                  slowdown_factor: float = 1):
     i = 1
     invoice_model = InvoiceModel(time_items=[], date=date.today())
     for entry in entries:
@@ -299,7 +315,8 @@ def dump_entries_to_invoice_model(self, entries: Iterable[TimeEntry], skip_logic
                 time_hrs_rounded = 0.25
             else:
                 nearest_quarter_floor = float(int((time_hrs) * 4)) / 4
-                minutes_over_nearest_floor = (time_hrs - nearest_quarter_floor) * 60
+                minutes_over_nearest_floor = (time_hrs -
+                                              nearest_quarter_floor) * 60
                 time_hrs_rounded = nearest_quarter_floor
                 if minutes_over_nearest_floor > 3:
                     time_hrs_rounded += 0.25
@@ -308,29 +325,23 @@ def dump_entries_to_invoice_model(self, entries: Iterable[TimeEntry], skip_logic
                 continue
             TimeItem(description=entry.description, hours=time_hrs_rounded)
 
-    
     for entry in entries:
 
         entry_str = "%s -- %s\t%s\t%s\t%.2f\n\t%s" % (
-            i,
-            entry.client_and_project,
-            entry.service_item,
-            entry.task,
-            time_hrs_rounded,
-            entry.description
-        )
+            i, entry.client_and_project, entry.service_item, entry.task,
+            time_hrs_rounded, entry.description)
         print(entry_str)
         i += 1
 
 
-
-def pull_and_import_single_day(date,
-                               api_key,
-                               importer: _EntryImporter = DmcTimerImporter(),
-                               toggl_project_to_client_name_map: Dict[str, str] = {},
-                               toggl_project_name_map: Dict[str, str] = {},
-                               skip_logic: Callable[[str, str], bool] = lambda cp, ser_it: False,
-                               slowdown_factor: float = 1):
+def pull_and_import_single_day(
+        date,
+        api_key,
+        importer: _EntryImporter = DmcTimerImporter(),
+        toggl_project_to_client_name_map: Dict[str, str] = {},
+        toggl_project_name_map: Dict[str, str] = {},
+        skip_logic: Callable[[str, str], bool] = lambda cp, ser_it: False,
+        slowdown_factor: float = 1):
     """
     @param date: a string in the format 'YYYY-MM-DD'
     @param api_key: a Toggl API key
@@ -364,15 +375,19 @@ def pull_and_import_single_day(date,
         print(day)
     print("---")
     # import it
-    importer.import_entries(parsed_data, skip_logic, slowdown_factor=slowdown_factor)
+    importer.import_entries(parsed_data,
+                            skip_logic,
+                            slowdown_factor=slowdown_factor)
 
 
 def generate_invoice_model(since_date: str,
-                            until_date: str,
-                               api_key,
-                               toggl_project_to_client_name_map: Dict[str, str] = {},
-                               toggl_project_name_map: Dict[str, str] = {},
-                               skip_logic: Callable[[str, str], bool] = lambda x, y: False):
+                           until_date: str,
+                           api_key,
+                           toggl_project_to_client_name_map: Dict[str,
+                                                                  str] = {},
+                           toggl_project_name_map: Dict[str, str] = {},
+                           skip_logic: Callable[[str, str],
+                                                bool] = lambda x, y: False):
     """
     @param date: a string in the format 'YYYY-MM-DD'
     @param api_key: a Toggl API key
@@ -403,11 +418,13 @@ def generate_invoice_model(since_date: str,
         print(day)
     print("---")
     # import it
-    importer.import_entries(parsed_data, skip_logic, slowdown_factor=slowdown_factor)
+    importer.import_entries(parsed_data,
+                            skip_logic,
+                            slowdown_factor=slowdown_factor)
 
 
 def main():
-    # an example: 
+    # an example:
     api_key = ""  # SET THIS TO YOUR API KEY (e.g. "4b5c6d7e8b8c8e9e8e7b7a6a1a3c5b4a"). Find it at https://toggl.com/app/profile.
     pull_and_import_single_day("2020-02-05", api_key)
 
