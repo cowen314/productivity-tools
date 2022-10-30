@@ -1,4 +1,5 @@
 from datetime import date
+from pydantic import BaseModel
 import requests, json, pyautogui, time
 from typing import List, Dict, Iterable, Callable
 from abc import abstractmethod
@@ -50,7 +51,7 @@ class Toggl:
 
 class TimeEntry:
     def __init__(self, client_and_project: str = None, service_item: str = None, task: str = None, time_ms: int = None,
-                 description: str = None):
+                 description: str = None, date: date = None):
         """
         @param client_and_project: the client and project in the form <client>:<project>
         """
@@ -59,6 +60,7 @@ class TimeEntry:
         self.task: str = task
         self.time_ms: int = time_ms
         self.description: str = description
+        self.date = date
 
     def __str__(self):
         return "c&p: %s; service_item: %s; task: %s; time_hr: %.2f; desc: %s" % (
@@ -259,6 +261,69 @@ class TextDumpImporter(_EntryImporter):
             i += 1
 
 
+# classes to support invoicing... these should stay in sync with the classes in the invoicing repo
+
+class TimeItem(BaseModel):
+    description: str
+    hours: float
+    date: date
+
+
+class MaterialItem(BaseModel):
+    description: str
+    cost: float
+    date: date
+
+
+class InvoiceModel(BaseModel):
+    time_items: List[TimeItem]
+    date: date
+    # material_items: List[MaterialItem]  # can add this later
+
+
+def dump_entries_to_invoice_model(self, entries: Iterable[TimeEntry], skip_logic: Callable[[str, str], bool],
+                    slowdown_factor: float = 1):
+    i = 1
+    invoice_model = InvoiceModel(time_items=[], date=date.today())
+    for entry in entries:
+        if skip_logic(entry.client_and_project, entry.service_item):
+            print("Skipped: " + str(entry))
+            continue
+        time_hrs_rounded = 0
+        if entry.time_ms:
+            time_hrs = entry.time_ms / 1000.0 / 60 / 60
+            # **rounding logic**
+            # Anything from 0-15 minutes is billed at 15 minutes (I add a 1 minute buffer to remove tiny entries)
+            # 3-minute buffer: 33 minutes gets rounded down to 30, 34 minutes is rounded up to 45 minutes.
+            if time_hrs < 0.25 and time_hrs * 60 > 1:
+                time_hrs_rounded = 0.25
+            else:
+                nearest_quarter_floor = float(int((time_hrs) * 4)) / 4
+                minutes_over_nearest_floor = (time_hrs - nearest_quarter_floor) * 60
+                time_hrs_rounded = nearest_quarter_floor
+                if minutes_over_nearest_floor > 3:
+                    time_hrs_rounded += 0.25
+            if time_hrs_rounded <= 0:
+                # print("Skipped: " + str(entry) + ". Insufficient time.")
+                continue
+            TimeItem(description=entry.description, hours=time_hrs_rounded)
+
+    
+    for entry in entries:
+
+        entry_str = "%s -- %s\t%s\t%s\t%.2f\n\t%s" % (
+            i,
+            entry.client_and_project,
+            entry.service_item,
+            entry.task,
+            time_hrs_rounded,
+            entry.description
+        )
+        print(entry_str)
+        i += 1
+
+
+
 def pull_and_import_single_day(date,
                                api_key,
                                importer: _EntryImporter = DmcTimerImporter(),
@@ -307,7 +372,7 @@ def generate_invoice_model(since_date: str,
                                api_key,
                                toggl_project_to_client_name_map: Dict[str, str] = {},
                                toggl_project_name_map: Dict[str, str] = {},
-                               skip_logic: Callable[[str, str], bool]):
+                               skip_logic: Callable[[str, str], bool] = lambda x, y: False):
     """
     @param date: a string in the format 'YYYY-MM-DD'
     @param api_key: a Toggl API key
