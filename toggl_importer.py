@@ -6,39 +6,49 @@ import typer
 from toggl.main import DmcTimerImporter, TextDumpImporter, pull_and_import_single_day
 from toggl.toggl_secrets import get_toggl_secrets
 
-
-class ImportType(Enum):
-    TEXT_DUMP = 0
-    DMC_TIMER = 1
-
-
-app = typer.Typer()
+app = typer.Typer(help="A tool for moving toggl data around")
 
 
 @app.command()
-def pull_and_import_one_day(date: str,
-                            api_key: Optional[str],
-                            import_type: ImportType = ImportType.TEXT_DUMP):
+def pull_and_import_one_day(
+        date: str = typer.Argument(...,
+                                   help="A string with the format YYYY-MM-DD"),
+        api_key: str = typer.
+    Argument(
+        None,
+        help=
+        "Toggl API key. If none is provided, this command attempts to load one from a file called toggl_secrets.json."
+    ),
+        import_type: str = typer.
+    Argument(
+        "text-dump",
+        help=
+        "The type of importer to use. Possible values are 'text-dump' and 'dmc-timer'"
+    )):
+    """
+    Pulls one day of data from the Toggl API, then moves it somewhere else. Where and how it's moved depends on `import-type`
+    """
     if api_key is None:
         toggl_secrets = get_toggl_secrets()
         api_key = toggl_secrets.api_key
+        if not api_key:
+            raise
 
-    if import_type is ImportType.TEXT_DUMP:
+    if import_type == 'text-dump':
         importer = TextDumpImporter()
-    elif ImportType is ImportType.DMC_TIMER:
+    elif import_type == 'dmc-timer':
         importer = DmcTimerImporter()
     else:
-        raise ValueError("Unsupported importer specified")
+        raise ValueError(f"Unsupported importer ('{import_type}') specified")
 
     pull_and_import_single_day(date, api_key, importer=importer)
 
 
 @app.command()
-def generate_invoice_model(start_date: str, end_date: str,
-                           api_key: Optional[str]):
-    '''
-    
-    '''
+def generate_invoice_model(start_date: str, end_date: str, api_key: str):
+    """
+    Generate an invoice model
+    """
     if api_key is None:
         toggl_secrets = get_toggl_secrets()
         api_key = toggl_secrets.api_key

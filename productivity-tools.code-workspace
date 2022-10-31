@@ -26,9 +26,10 @@
 	"launch": {
 		"configurations": [
 			{
-				"name": "Generate invoice",
+				"name": "Import time",
 				"type": "python",
 				"request": "launch",
+				"args": ["pull-and-import-one-day", "2022-10-25"],
 				"program": "toggl_importer.py",
 				"console": "integratedTerminal"
 			}
