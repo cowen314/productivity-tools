@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from pydantic import BaseModel
 import requests, json, pyautogui, time
 from typing import List, Dict, Iterable, Callable
@@ -88,7 +88,8 @@ def _merge_entry(entries: Iterable[TimeEntry],
     for existing_entry in entries:
         if existing_entry.client_and_project == new_entry.client_and_project and \
                 existing_entry.service_item == new_entry.service_item and \
-                existing_entry.task == new_entry.task:
+                existing_entry.task == new_entry.task and \
+                existing_entry.date == new_entry.date:
             existing_entry.time_ms += new_entry.time_ms
             existing_entry.description += " " + new_entry.description
             found_matching = True
@@ -124,10 +125,11 @@ class ExampleParser(_EntryParser):
                     client_name]
 
             # loop through entries for that client
-            # for now, I'll just add a new entry for each entry in toggl
-            # at some point, might want to intelligently combine entries
             for toggl_info in project['items']:
                 entry = TimeEntry()
+
+                entry.date = datetime.fromisoformat(
+                    toggl_info['local_start']).date()
 
                 toggl_entry_info = toggl_info['title']['time_entry'].split('|')
                 if len(toggl_entry_info) == 3 or len(toggl_entry_info) == 4:
@@ -380,14 +382,13 @@ def pull_and_import_single_day(
                             slowdown_factor=slowdown_factor)
 
 
-def generate_invoice_model(since_date: str,
-                           until_date: str,
-                           api_key,
-                           toggl_project_to_client_name_map: Dict[str,
-                                                                  str] = {},
-                           toggl_project_name_map: Dict[str, str] = {},
-                           skip_logic: Callable[[str, str],
-                                                bool] = lambda x, y: False):
+def generate_toggl_invoice_model(
+        since_date: str,
+        until_date: str,
+        api_key,
+        toggl_project_to_client_name_map: Dict[str, str] = {},
+        toggl_project_name_map: Dict[str, str] = {},
+        skip_logic: Callable[[str, str], bool] = lambda x, y: False):
     """
     @param date: a string in the format 'YYYY-MM-DD'
     @param api_key: a Toggl API key
