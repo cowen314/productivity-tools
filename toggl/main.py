@@ -297,10 +297,8 @@ class InvoiceModel(BaseModel):
     # material_items: List[MaterialItem]  # can add this later
 
 
-def dump_entries_to_invoice_model(self,
-                                  entries: Iterable[TimeEntry],
-                                  skip_logic: Callable[[str, str], bool],
-                                  slowdown_factor: float = 1):
+def dump_entries_to_invoice_model(entries: Iterable[TimeEntry],
+                                  skip_logic: Callable[[str, str], bool]):
     i = 1
     invoice_model = InvoiceModel(time_items=[], date=date.today())
     for entry in entries:
@@ -325,15 +323,18 @@ def dump_entries_to_invoice_model(self,
             if time_hrs_rounded <= 0:
                 # print("Skipped: " + str(entry) + ". Insufficient time.")
                 continue
-            TimeItem(description=entry.description, hours=time_hrs_rounded)
+            invoice_model.time_items.append(
+                TimeItem(description=entry.description,
+                         hours=time_hrs_rounded,
+                         date=entry.date))
 
-    for entry in entries:
+    # for entry in entries:
 
-        entry_str = "%s -- %s\t%s\t%s\t%.2f\n\t%s" % (
-            i, entry.client_and_project, entry.service_item, entry.task,
-            time_hrs_rounded, entry.description)
-        print(entry_str)
-        i += 1
+    #     entry_str = "%s -- %s\t%s\t%s\t%.2f\n\t%s" % (
+    #         i, entry.client_and_project, entry.service_item, entry.task,
+    #         time_hrs_rounded, entry.description)
+    #     print(entry_str)
+    #     i += 1
 
 
 def pull_and_import_single_day(
@@ -419,9 +420,10 @@ def generate_toggl_invoice_model(
         print(day)
     print("---")
     # import it
-    importer.import_entries(parsed_data,
-                            skip_logic,
-                            slowdown_factor=slowdown_factor)
+    dump_entries_to_invoice_model(entries=parsed_data)
+    # importer.import_entries(parsed_data,
+    #                         skip_logic,
+    #                         slowdown_factor=slowdown_factor)
 
 
 def main():
