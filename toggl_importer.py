@@ -73,7 +73,7 @@ def generate_invoice_model(start_date: str, end_date: str, api_key: str):
             print("Invalid / blank API key found in secrets file")
             raise typer.Exit(code=1)
 
-    generate_toggl_invoice_model
+    generate_toggl_invoice_model()
 
 
 if __name__ == "__main__":
