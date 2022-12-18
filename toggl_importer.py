@@ -32,7 +32,7 @@ def pull_and_import_one_day(
         toggl_secrets = get_toggl_secrets()
         api_key = toggl_secrets.api_key
         if not api_key:
-            raise
+            print()
 
     if import_type == 'text-dump':
         importer = TextDumpImporter()
@@ -45,7 +45,20 @@ def pull_and_import_one_day(
 
 
 @app.command()
-def generate_invoice_model(start_date: str, end_date: str, api_key: str):
+def generate_invoice_model(
+        start_date: str = typer.Argument(
+            ...,
+            help="Start date for the invoice model with the format YYYY-MM-DD"
+        ),
+        end_date: str = typer.Argument(
+            ...,
+            help="End date for the invoice model with the format YYYY-MM-DD"),
+        api_key: str = typer.
+    Argument(
+        None,
+        help=
+        "Toggl API key. If none is provided, this command attempts to load one from a file called toggl_secrets.json."
+    )):
     """
     Generate an invoice model
     """
