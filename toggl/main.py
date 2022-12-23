@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from pydantic import BaseModel
 import requests, json, pyautogui, time
-from typing import List, Dict, Iterable, Callable
+from typing import List, Dict, Iterable, Callable, Optional
 from abc import abstractmethod
 
 
@@ -12,7 +12,7 @@ class Toggl:
 
     def __init__(self,
                  api_key: str,
-                 workspace_id: int = None,
+                 workspace_id: Optional[int] = None,
                  user_agent: str = "api_test"):
         self.api_key = api_key
         self.workspace_id = workspace_id
@@ -47,20 +47,20 @@ class Toggl:
 class TimeEntry:
 
     def __init__(self,
-                 client_and_project: str = None,
-                 service_item: str = None,
-                 task: str = None,
-                 time_ms: int = None,
-                 description: str = None,
-                 date: date = None):
+                 client_and_project: Optional[str] = None,
+                 service_item: Optional[str] = None,
+                 task: Optional[str] = None,
+                 time_ms: Optional[int] = None,
+                 description: Optional[str] = None,
+                 date: Optional[date] = None):
         """
         @param client_and_project: the client and project in the form <client>:<project>
         """
-        self.client_and_project: str = client_and_project
-        self.service_item: str = service_item
-        self.task: str = task
-        self.time_ms: int = time_ms
-        self.description: str = description
+        self.client_and_project = client_and_project
+        self.service_item = service_item
+        self.task = task
+        self.time_ms = time_ms
+        self.description = description
         self.date = date
 
     def __str__(self):
@@ -179,7 +179,7 @@ class DmcTimerImporter(_EntryImporter):
                        entries: Iterable[TimeEntry],
                        skip_logic: Callable[[str, str], bool],
                        slowdown_factor: float = 1):
-        pyautogui.alert(
+        pyautogui.alert(  # type: ignore
             "Open timer and set the correct date. Press OK when ready to auto import time. Slam mouse into one of the corners of the screen at any point to cancel the sequence."
         )
         time.sleep(slowdown_factor * 1.25)
@@ -240,7 +240,7 @@ class DmcTimerImporter(_EntryImporter):
                 time.sleep(slowdown_factor * 2)
             pyautogui.hotkey('enter')
             time.sleep(slowdown_factor * 3)
-        pyautogui.alert("Time entry complete")
+        pyautogui.alert("Time entry complete")  # type: ignore
 
 
 class TextDumpImporter(_EntryImporter):
@@ -297,8 +297,13 @@ class InvoiceModel(BaseModel):
     # material_items: List[MaterialItem]  # can add this later
 
 
-def dump_entries_to_invoice_model(entries: Iterable[TimeEntry],
-                                  skip_logic: Callable[[str, str], bool]):
+def dump_entries_to_invoice_model(
+        entries: Iterable[TimeEntry],
+        skip_logic: Callable[[str, str], bool] = lambda x, y: False):
+    '''
+    - Dump entries to a model that can be imported by an invoice generator
+    - by default, no entries are be skipped. To automatically skip entries, provide a value for skip_logic
+    '''
     i = 1
     invoice_model = InvoiceModel(time_items=[], date=date.today())
     for entry in entries:
@@ -327,6 +332,7 @@ def dump_entries_to_invoice_model(entries: Iterable[TimeEntry],
                 TimeItem(description=entry.description,
                          hours=time_hrs_rounded,
                          date=entry.date))
+    return invoice_model
 
     # for entry in entries:
 
@@ -420,7 +426,7 @@ def generate_toggl_invoice_model(
         print(day)
     print("---")
     # import it
-    dump_entries_to_invoice_model(entries=parsed_data)
+    return dump_entries_to_invoice_model(entries=parsed_data)
     # importer.import_entries(parsed_data,
     #                         skip_logic,
     #                         slowdown_factor=slowdown_factor)
