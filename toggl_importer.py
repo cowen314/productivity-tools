@@ -14,12 +14,6 @@ app = typer.Typer(help="A tool for moving toggl data around")
 def pull_and_import_one_day(
         date: str = typer.Argument(...,
                                    help="A string with the format YYYY-MM-DD"),
-        api_key: str = typer.
-    Argument(
-        None,
-        help=
-        "Toggl API key. If none is provided, this command attempts to load one from a file called toggl_secrets.json."
-    ),
         import_type: str = typer.
     Argument(
         "text-dump",
@@ -31,6 +25,12 @@ def pull_and_import_one_day(
         1,
         help=
         "A multiplier applied to import waits. Increase the value of this parameter to run the import process more slowly."
+    ),
+        api_key: str = typer.
+    Argument(
+        None,
+        help=
+        "Toggl API key. If none is provided, this command attempts to load one from a file called toggl_secrets.json."
     )):
     """
     Pulls one day of data from the Toggl API, then moves it somewhere else. Where and how it's moved depends on `import-type`

@@ -29,7 +29,8 @@
 				"name": "Import time",
 				"type": "python",
 				"request": "launch",
-				"args": ["pull-and-import-one-day", "2022-10-31", "import-type", "dmc-timer"],
+				"args": ["pull-and-import-one-day", "2023-07-07", "dmc-timer", "1"],
+				// "args": ["pull-and-import-one-day", "2023-05-01", "text-dump", "1"],
 				"program": "toggl_importer.py",
 				"console": "integratedTerminal"
 			}

@@ -347,6 +347,7 @@ def pull_and_import_single_day(
         date,
         api_key,
         importer: _EntryImporter = DmcTimerImporter(),
+        # importer: _EntryImporter = TextDumpImporter(),
         toggl_project_to_client_name_map: Dict[str, str] = {},
         toggl_project_name_map: Dict[str, str] = {},
         skip_logic: Callable[[str, str], bool] = lambda cp, ser_it: False,
@@ -371,11 +372,11 @@ def pull_and_import_single_day(
     # grab raw data from the Toggl
     my_toggl = Toggl(api_key)
     workspaces = my_toggl.get_available_workspaces()
-    print(workspaces)
+    # print(workspaces)
     time.sleep(1)  # max 1 request per second to toggl's API
     my_toggl.workspace_id = workspaces[0]["id"]
     data = my_toggl.get_entries_1_day(date)
-    print(data)
+    # print(data)
 
     # parse it to nicely formatted structure
     e = ExampleParser(toggl_project_to_client_name_map, toggl_project_name_map)
@@ -384,6 +385,11 @@ def pull_and_import_single_day(
         print(day)
     print("---")
     # import it
+    if type(importer) is not TextDumpImporter:
+        ti = TextDumpImporter()
+        ti.import_entries(parsed_data,
+                          skip_logic,
+                          slowdown_factor=slowdown_factor)
     importer.import_entries(parsed_data,
                             skip_logic,
                             slowdown_factor=slowdown_factor)
