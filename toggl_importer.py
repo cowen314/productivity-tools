@@ -86,8 +86,9 @@ def generate_invoice_model(
             print("Invalid / blank API key found in secrets file")
             raise typer.Exit(code=1)
     model = generate_toggl_invoice_model(start_date, end_date, api_key)
+    json_str = model.json().replace('\n', ' ').replace('\r', '')
     print("INVOICE MODEL BELOW")
-    print(model.json())
+    print(json_str)
 
 
 if __name__ == "__main__":
