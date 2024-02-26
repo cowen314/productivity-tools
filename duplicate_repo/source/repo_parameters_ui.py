@@ -5,13 +5,14 @@ from tkinter import filedialog
 from version import version
 
 class ToolUI():
-    def __init__(self, namespace, template_url, dest_base_url, target_path, protocol):
+    def __init__(self, namespace, template_url, dest_base_url, target_path, protocol, squash_commits):
         self.project_name = ""
         self.namespace = namespace
         self.template_url = template_url
         self.dest_base_url = dest_base_url
         self.target_path = target_path
         self.protocol = protocol
+        self.squash_commits = squash_commits
     
     def setValues(self):
         if self.entry_project_name.get() != "":
@@ -25,6 +26,7 @@ class ToolUI():
         if self.entry_target_path.get() != "":
             self.target_path = self.entry_target_path.get()
         self.protocol = self.entry_protocol.get()
+        self.squash_commits = self.entry_squash_commits.get() == 1
         #self.duplicate_text.set("Start Running...")
         self.root.destroy()
 
@@ -39,7 +41,7 @@ class ToolUI():
         self.root.title(f"DMC Duplicate Repo Tool (v{version})")
 
         canvas = tk.Canvas(self.root, width=1350, height=300)
-        canvas.grid(columnspan=5, rowspan=7)
+        canvas.grid(columnspan=5, rowspan=8)
 
         label_project_name = tk.Label(self.root, text="Enter the name of your repo / project (*MUST PROVIDE*):")
         label_project_name.grid(column=0, row=0, sticky=W)
@@ -76,11 +78,17 @@ class ToolUI():
         self.entry_protocol = tk.StringVar(self.root, value="HTTPS")
         tk.Radiobutton(self.root, text="HTTPS", variable=self.entry_protocol, value="HTTPS").grid(column=2, row=5)
         tk.Radiobutton(self.root, text="SSL", variable=self.entry_protocol, value="SSL").grid(column=3, row=5)
+
+        label_squash_commits = tk.Label(self.root, text="Squash commits in new repository?:")
+        label_squash_commits.grid(column=0, row=6, sticky=W)
+        self.entry_squash_commits = tk.IntVar(self.root, value=1)
+        tk.Checkbutton(self.root, text="Squash?", variable=self.entry_squash_commits, onvalue=1, offvalue=0).grid(column=2, row=6, columnspan=2)
+        
             
         self.duplicate_text = tk.StringVar()
         duplicate_btn = tk.Button(self.root, textvariable = self.duplicate_text, command=self.setValues, height=2, width=20)
         self.duplicate_text.set("Duplicate")
-        duplicate_btn.grid(column=2, row=6, columnspan=2)
+        duplicate_btn.grid(column=2, row=7, columnspan=2)
 
         #Run the main loop
         self.root.mainloop()
@@ -93,5 +101,5 @@ class ToolUI():
         # print("Target Path: %s" % toolUI.target_path)
 
 if __name__ == "__main__":
-    toolUI = ToolUI("DMC/labview/", "https://git.dmcinfo.com/DMC/labview/dmc-templates/labview-template-project.git", "https://git.dmcinfo.com/", ".", "HTTPS")
+    toolUI = ToolUI("DMC/labview/", "https://git.dmcinfo.com/DMC/labview/dmc-templates/labview-template-project.git", "https://git.dmcinfo.com/", ".", "HTTPS", 1)
     toolUI.launchUI()

@@ -51,6 +51,7 @@ def call_cli(command: str, running_as_wizard: bool, cwd: Path, pre_msg: str = No
     elif len(po.stdout) > 0:
         print(po.stdout.decode('ascii'))
     print("---")
+    return po.stdout
 
 
 def clean_url_string(url: str) -> str:
@@ -69,6 +70,8 @@ def apply_protocol(url: str, protocol: str, wizard):
         formatted = f"https://{host}/{extension}"
     else:
         formatted = f"git@{host}:{extension}"
+    if formatted.endswith("/"):
+        formatted = formatted[:-1]
     if not formatted.endswith(".git"):
         formatted += ".git"
     return formatted
@@ -96,6 +99,7 @@ parser.add_argument('--template-url', help="Template repository to copy to the n
 parser.add_argument('--target-path', help="Local path to copy files into", default=".", dest="target_path")
 parser.add_argument('--dest-base-url', help="URL base for the new Gitlab repo / project. This URL should not contain the namespace or project. (default: %s)" % config["default_dest_base_url"], default=config["default_dest_base_url"], dest="dest_base_url")
 parser.add_argument('--protocol', help="Protocol to use for git repository. Either HTTPS or SSL. (default: %s)" % config["default_protocol"], default=config["default_protocol"], dest="protocol")
+parser.add_argument('--squash-commits', help="Whether the new repository should squash the commit history from the template. (default: %s)" % config["default_squash_commits"], dest="squash_commits", action='store_true')
 parser.add_argument("--wizard", help="Run this tool with a wizard to walk through setting parameters.", action="store_true")
 
 # parse args
@@ -106,7 +110,7 @@ if not args.project_name:
 
 # if the wizard flag was set, run the user through the wizard
 if args.wizard:
-    toolUI = ToolUI(args.namespace, args.template_url, args.dest_base_url, args.target_path, args.protocol)
+    toolUI = ToolUI(args.namespace, args.template_url, args.dest_base_url, args.target_path, args.protocol, args.squash_commits)
     toolUI.launchUI()
     if toolUI.project_name == "":
         exit_with_error(" > Invalid project name", args.wizard)
@@ -116,6 +120,7 @@ if args.wizard:
     args.dest_base_url = toolUI.dest_base_url
     args.target_path = toolUI.target_path
     args.protocol = toolUI.protocol
+    args.squash_commits = toolUI.squash_commits
 
     print("---Parameter Setting Completed---")
     print("Project Name: %s" % toolUI.project_name)
@@ -124,6 +129,7 @@ if args.wizard:
     print("Dest Base URL: %s" % toolUI.dest_base_url)
     print("Target Path: %s" % toolUI.target_path)
     print("Protocol: %s" % toolUI.protocol)
+    print("Squash Commits?: %s" % toolUI.squash_commits)
 
     # args.project_name = input(" > Enter the name of your repo / project: ")  # TODO add check for invalid chars
     # if args.project_name.strip() == "":
@@ -174,13 +180,12 @@ namespace_url = apply_protocol(namespace_url, args.protocol, args.wizard)
 new_project_url = urllib.parse.urljoin(clean_url_string(args.dest_base_url), posixpath.join(args.namespace, args.project_name+".git"))
 new_project_url = apply_protocol(new_project_url, args.protocol, args.wizard)
 
-call_cli("git push --set-upstream %s master" % new_project_url, args.wizard, repo_dir.resolve(),
-        pre_msg="Pushing to new project at %s" % new_project_url,
-        custom_err_msg="Failed to create new repository (does it already exist? do you have proper permissions to "
-                        "push to this group?")
-
-# add ref to origin
-call_cli("git remote add origin %s" % new_project_url, args.wizard, repo_dir.resolve(), pre_msg="Adding new remote")
+head_branch = subprocess.run(
+    ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+    capture_output=True,
+    cwd=repo_dir.resolve()
+)
+head_branch = str(head_branch.stdout, encoding="utf-8").strip()
 
 # add "initial" commit
 # print("Adding initial commit")
@@ -190,17 +195,44 @@ with open(init_file, "a") as fh:
     fh.write("\n\n---\n\nThis project was created %s by copying %s." % (str(datetime.datetime.now()), clean_url_string(args.template_url)))
 # call_cli("git commit -am 'REPO CREATOR (v%s): INIT'" % version, args.wizard, repo_dir.resolve(),
 #          pre_msg="Adding initial commit")
-po = subprocess.run(
-    ["git", "commit", "-am", f"REPO CREATOR (v{version}): INIT"],
-    capture_output=True,
-    cwd=repo_dir.resolve())
-if po.returncode > 0:
-    exit_with_error("ERROR: " + po.stderr.decode('ascii'), args.wizard)
-elif len(po.stdout) > 0:
-    print(po.stdout.decode('ascii'))
-print("---")
 
-call_cli("git push", args.wizard, repo_dir.resolve(), pre_msg="Pushing")
+if args.squash_commits:
+    # inspired by this post: https://stackoverflow.com/questions/55325930/git-how-to-squash-all-commits-on-master-branch
+    squash_commands = [
+        ["git", "checkout", "--orphan", "repo-duplicator-temp"],
+        ["git", "commit", "-am", f"REPO CREATOR (v{version}): INIT"],
+        ["git", "branch", "-f", head_branch],
+        ["git", "checkout", head_branch],
+        ["git", "branch", "-d", "repo-duplicator-temp"],
+    ]
+    for command in squash_commands:
+        git_operation = subprocess.run(
+            command,
+            capture_output=True,
+            cwd=repo_dir.resolve(),
+            check=True
+        )
+        if git_operation.returncode > 0:
+            exit_with_error("ERROR: " + git_operation.stderr.decode('ascii'), args.wizard)
+
+else:
+    po = subprocess.run(
+        ["git", "commit", "-am", f"REPO CREATOR (v{version}): INIT"],
+        capture_output=True,
+        cwd=repo_dir.resolve())
+    if po.returncode > 0:
+        exit_with_error("ERROR: " + po.stderr.decode('ascii'), args.wizard)
+    elif len(po.stdout) > 0:
+        print(po.stdout.decode('ascii'))
+    print("---")
+
+call_cli(f"git push --set-upstream {new_project_url} {head_branch}", args.wizard, repo_dir.resolve(),
+        pre_msg="Pushing to new project at %s" % new_project_url,
+        custom_err_msg="Failed to create new repository (does it already exist? do you have proper permissions to "
+                        "push to this group?")
+
+# add ref to origin
+call_cli("git remote add origin %s" % new_project_url, args.wizard, repo_dir.resolve(), pre_msg="Adding new remote")
 
 print(" > Moving out of temporary directory")
 repo_dir.rename(repo_dir.parent.parent / args.project_name)  # move up a directory, into appropriately named folder
