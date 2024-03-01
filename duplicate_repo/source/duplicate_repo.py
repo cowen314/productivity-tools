@@ -237,6 +237,9 @@ call_cli("git remote add origin %s" % new_project_url, args.wizard, repo_dir.res
 print(" > Moving out of temporary directory")
 repo_dir.rename(repo_dir.parent.parent / args.project_name)  # move up a directory, into appropriately named folder
 
+# Delete temporary folder
+temporary_dir.rmdir()
+
 project_settings_url = urllib.parse.urljoin(clean_url_string(args.dest_base_url), posixpath.join(args.namespace, args.project_name, "edit"))
 print(" > SUCCESS: Repository created successfully!"
       "\n > URL of new project is %s."
