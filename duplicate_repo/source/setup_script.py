@@ -19,10 +19,8 @@ def copy_dist_to_target(source_path: Path, target_path: Path) -> bool:
     else:
         print("Unable to find the source/distribution directory, looked at %s" % source_path.resolve())
         return False
-    if len(list(target_path.glob("*"))) > 0:
+    if target_path.exists():
         shutil.rmtree(target_path)
-    else:
-        target_path.rmdir()  # remove this dir to avoid error from shutil.copytree
     print("Installing to %s" % target_path)
     shutil.copytree(str(source_path), str(target_path))
     return True
