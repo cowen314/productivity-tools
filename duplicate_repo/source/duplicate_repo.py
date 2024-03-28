@@ -60,7 +60,7 @@ def clean_url_string(url: str) -> str:
 
 
 def apply_protocol(url: str, protocol: str, wizard):
-    if protocol not in ["HTTPS", "SSL"]:
+    if protocol not in ["HTTPS", "SSH"]:
         exit_with_error(f" > ERROR: Invalid protocol specified - {protocol}", wizard)
     match = re.search(r'^(git@|https?:\/\/)([^\/:]*)[:\/](.*)', url) # Split URL into protocol, host, and the rest
     if match is None:
@@ -98,7 +98,7 @@ parser.add_argument('--namespace', help="Namespace of the project on Gitlab (def
 parser.add_argument('--template-url', help="Template repository to copy to the newly created repo (default: %s)" % config["default_template_url"], default=config["default_template_url"], dest="template_url")
 parser.add_argument('--target-path', help="Local path to copy files into", default=".", dest="target_path")
 parser.add_argument('--dest-base-url', help="URL base for the new Gitlab repo / project. This URL should not contain the namespace or project. (default: %s)" % config["default_dest_base_url"], default=config["default_dest_base_url"], dest="dest_base_url")
-parser.add_argument('--protocol', help="Protocol to use for git repository. Either HTTPS or SSL. (default: %s)" % config["default_protocol"], default=config["default_protocol"], dest="protocol")
+parser.add_argument('--protocol', help="Protocol to use for git repository. Either HTTPS or SSH. (default: %s)" % config["default_protocol"], choices=["HTTPS", "SSL"], default=config["default_protocol"], dest="protocol")
 parser.add_argument('--squash-commits', help="Whether the new repository should squash the commit history from the template.", dest="squash_commits", action='store_true')
 parser.add_argument("--wizard", help="Run this tool with a wizard to walk through setting parameters.", action="store_true")
 

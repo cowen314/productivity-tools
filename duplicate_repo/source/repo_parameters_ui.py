@@ -73,11 +73,11 @@ class ToolUI():
         self.selectDirectory_text.set("Select")
         selectDirectory_btn.grid(column=1, row=4)
 
-        label_protocol = tk.Label(self.root, text="Select protocol to use (HTTPS/SSL):")
+        label_protocol = tk.Label(self.root, text="Select protocol to use (HTTPS/SSH):")
         label_protocol.grid(column=0, row=5, sticky=W)
         self.entry_protocol = tk.StringVar(self.root, value="HTTPS")
         tk.Radiobutton(self.root, text="HTTPS", variable=self.entry_protocol, value="HTTPS").grid(column=2, row=5)
-        tk.Radiobutton(self.root, text="SSL", variable=self.entry_protocol, value="SSL").grid(column=3, row=5)
+        tk.Radiobutton(self.root, text="SSH", variable=self.entry_protocol, value="SSH").grid(column=3, row=5)
 
         label_squash_commits = tk.Label(self.root, text="Squash commits in new repository?:")
         label_squash_commits.grid(column=0, row=6, sticky=W)
